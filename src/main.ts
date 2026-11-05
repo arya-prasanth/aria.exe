@@ -662,46 +662,28 @@ app.innerHTML = `
   </section>
 
   <!-- VISITORS -->
+<section class="card visitors-card">
 
-  <section class="card visitors-card">
+  <div class="card-heading">
+    <span>~/visitors</span>
+    <span class="live">● tracking</span>
+  </div>
 
-    <div class="card-heading">
+  <div class="visitor-number">
+    <span>—</span>
+    <small>page views</small>
+  </div>
 
-      <span>~/visitors</span>
+  <div class="visitor-map">
+    <div class="map-grid"></div>
+    <span class="map-label">VERCEL ANALYTICS</span>
+  </div>
 
-      <span class="live">● live</span>
+  <small class="visitor-info">
+    🌏︎ · analytics enabled
+  </small>
 
-    </div>
-
-    <div class="visitor-number">
-
-      <span id="visitor-count">1,247</span>
-
-      <small>visitors</small>
-
-    </div>
-
-    <div class="visitor-map">
-
-      <div class="map-grid"></div>
-
-      <span class="map-dot d1"></span>
-      <span class="map-dot d2"></span>
-      <span class="map-dot d3"></span>
-      <span class="map-dot d4"></span>
-      <span class="map-dot d5"></span>
-
-      <span class="map-label">LIVE WORLD</span>
-
-    </div>
-
-    <small class="visitor-info">
-      live · analytics connecting
-    </small>
-
-  </section>
-
-</main>
+</section>
 `
 
 /* =========================================================
