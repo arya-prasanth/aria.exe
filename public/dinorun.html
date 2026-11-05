@@ -1,0 +1,1326 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#020805">
+<title>DINO RUN | Terminal Edition</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg: #020805;
+    --panel: #061109;
+    --green: #39ff75;
+    --bright: #b5ffc8;
+    --dim: #55bd72;
+    --muted: #55765e;
+    --border: rgba(57,255,117,.25);
+    --glow: 0 0 20px rgba(57,255,117,.15);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+    padding: 25px 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background:
+        radial-gradient(ellipse at top, #0b2613 0%, transparent 55%),
+        #020805;
+    color: var(--bright);
+    font-family: 'IBM Plex Mono', monospace;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: .13;
+    background-image:
+        linear-gradient(rgba(57,255,117,.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57,255,117,.1) 1px, transparent 1px);
+    background-size: 35px 35px;
+}
+
+.terminal {
+    width: 100%;
+    max-width: 1000px;
+    background: rgba(3,10,5,.97);
+    border: 1px solid #16883d;
+    box-shadow: 0 0 45px rgba(0,255,68,.09),
+                inset 0 0 30px rgba(0,255,68,.025);
+    position: relative;
+}
+
+.terminal-header {
+    min-height: 62px;
+    padding: 13px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: linear-gradient(90deg,#0a1d0e,#061109);
+    border-bottom: 1px solid var(--border);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    color: var(--green);
+    border: 1px solid var(--dim);
+    text-shadow: 0 0 12px var(--green);
+    box-shadow: var(--glow);
+}
+
+.logo {
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 21px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 12px #39ff7580;
+}
+
+.version {
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 1px;
+    margin-top: 3px;
+}
+
+.status {
+    color: var(--bright);
+    font-size: 11px;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--green);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    50% { opacity: .35; }
+}
+
+.terminal-body {
+    padding: 24px;
+}
+
+.intro {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 22px;
+}
+
+.eyebrow {
+    color: var(--dim);
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+h1 {
+    color: #e0ffe7;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(26px,4vw,38px);
+    font-weight: normal;
+    letter-spacing: 3px;
+}
+
+h1 span {
+    color: var(--green);
+    text-shadow: 0 0 15px #39ff7550;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.8;
+    margin-top: 9px;
+}
+
+.session {
+    padding: 11px 15px;
+    border: 1px solid var(--border);
+    background: rgba(57,255,117,.025);
+    min-width: 155px;
+}
+
+.session small {
+    display: block;
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 1px;
+    margin-bottom: 7px;
+}
+
+.session strong {
+    color: var(--bright);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.stat {
+    padding: 13px;
+    background: linear-gradient(145deg,#0b1d10,#040c07);
+    border: 1px solid var(--border);
+}
+
+.stat-label {
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    color: var(--bright);
+    font-size: clamp(17px,2.5vw,23px);
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.stat-value small {
+    color: var(--dim);
+    font-size: 10px;
+    font-weight: normal;
+}
+
+.game-container {
+    position: relative;
+    border: 1px solid #176d32;
+    background: #010501;
+    overflow: hidden;
+    box-shadow: inset 0 0 35px #000b;
+}
+
+.game-topline {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 12px;
+    background: #040b06;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: pixelated;
+    touch-action: manipulation;
+}
+
+.overlay {
+    position: absolute;
+    inset: 30px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 18px;
+    background: rgba(1,5,2,.87);
+    backdrop-filter: blur(3px);
+}
+
+.overlay-card {
+    width: min(100%,440px);
+    padding: 24px 18px;
+    border: 1px solid var(--border);
+    background: rgba(3,13,7,.96);
+    box-shadow: 0 0 35px rgba(57,255,117,.1);
+}
+
+.overlay-kicker {
+    color: var(--dim);
+    font-size: 9px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+.overlay h2 {
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(25px,4vw,36px);
+    letter-spacing: 4px;
+    text-shadow: 0 0 15px #39ff7580;
+    margin-bottom: 13px;
+}
+
+.overlay p {
+    color: #a0ffb6;
+    font-size: 11px;
+    line-height: 2.1;
+}
+
+.blink {
+    margin-top: 20px;
+    color: var(--green);
+    font-size: 10px;
+    letter-spacing: 1px;
+    animation: blink 1s steps(2,start) infinite;
+}
+
+@keyframes blink {
+    to { visibility: hidden; }
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 17px;
+}
+
+button {
+    padding: 11px 17px;
+    background: rgba(57,255,117,.04);
+    color: var(--bright);
+    border: 1px solid var(--border);
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: .2s;
+}
+
+button:hover {
+    background: var(--green);
+    color: #020805;
+    border-color: var(--green);
+    box-shadow: 0 0 16px #39ff7560;
+    transform: translateY(-2px);
+}
+
+button.primary {
+    color: #020805;
+    background: var(--green);
+    border-color: var(--green);
+    font-weight: 700;
+}
+
+button.primary:hover {
+    background: var(--bright);
+}
+
+button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+}
+
+.instructions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 19px 0;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+kbd {
+    display: inline-block;
+    padding: 3px 6px;
+    margin-right: 4px;
+    color: var(--bright);
+    border: 1px solid var(--border);
+    background: rgba(57,255,117,.05);
+    font: inherit;
+}
+
+.extra-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.info-card {
+    border: 1px solid var(--border);
+    background: #050d08;
+    padding: 13px;
+}
+
+.info-title {
+    color: var(--dim);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+}
+
+.score-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.score-list li {
+    display: flex;
+    justify-content: space-between;
+}
+
+.score-list strong {
+    color: var(--bright);
+    font-weight: 500;
+}
+
+.bottom-info {
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+    padding-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #456b4e;
+    font-size: 9px;
+    letter-spacing: .5px;
+}
+
+.bottom-info span:last-child {
+    color: var(--dim);
+}
+
+@media(max-width:650px) {
+    body { padding: 12px 8px; }
+    .terminal-body { padding: 13px; }
+    .terminal-header { padding: 12px; }
+    .logo { font-size: 17px; }
+    .stats { grid-template-columns: repeat(2,1fr); gap: 7px; }
+    .stat { padding: 10px; }
+    .session { width: 100%; }
+    .instructions { gap: 10px; font-size: 9px; }
+    .extra-info { grid-template-columns: 1fr; }
+    .bottom-info { font-size: 8px; }
+    button { padding: 10px 12px; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+    *,*::before,*::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<main class="terminal">
+
+    <header class="terminal-header">
+        <div class="brand">
+            <div class="brand-icon">▣</div>
+            <div>
+                <div class="logo">DINO_RUN.exe</div>
+                <div class="version">ARCADE TERMINAL // BUILD 01.04</div>
+            </div>
+        </div>
+
+        <div class="status">
+            <span class="status-dot"></span>
+            <span id="status">SYSTEM READY</span>
+        </div>
+    </header>
+
+    <section class="terminal-body">
+
+        <div class="intro">
+            <div>
+                <div class="eyebrow">// WELCOME, PLAYER_01</div>
+                <h1>RUN. <span>JUMP.</span> SURVIVE.</h1>
+                <p class="subtitle">
+                    An endless terminal runner.
+                    Avoid obstacles. Beat your personal best.
+                </p>
+            </div>
+
+            <div class="session">
+                <small>SESSION STATUS</small>
+                <strong id="sessionStatus">AWAITING INPUT</strong>
+            </div>
+        </div>
+
+        <section class="stats">
+            <div class="stat">
+                <div class="stat-label">SCORE</div>
+                <div class="stat-value" id="score">00000</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">PERSONAL BEST</div>
+                <div class="stat-value" id="best">00000</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">LEVEL</div>
+                <div class="stat-value" id="level">01</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">SPEED</div>
+                <div class="stat-value" id="speed">1.0<small> x</small></div>
+            </div>
+        </section>
+
+        <section class="game-container">
+
+            <div class="game-topline">
+                <span>▶ LIVE GAME FEED</span>
+                <span id="feedStatus">ENGINE IDLE</span>
+            </div>
+
+            <canvas id="game" width="900" height="300"></canvas>
+
+            <div class="overlay" id="overlay">
+                <div class="overlay-card">
+                    <div class="overlay-kicker">// SYSTEM BOOT COMPLETE</div>
+                    <h2 id="overlayTitle">DINO RUN</h2>
+
+                    <p id="overlayText">
+                        &gt; WELCOME TO THE TERMINAL<br>
+                        &gt; AVOID ALL OBSTACLES<br>
+                        &gt; SURVIVE AS LONG AS POSSIBLE
+                    </p>
+
+                    <div class="blink" id="overlayPrompt">
+                        [ PRESS SPACE TO START ]
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <div class="controls">
+            <button class="primary" id="startBtn">▶ START GAME</button>
+            <button id="pauseBtn">Ⅱ PAUSE / RESUME</button>
+            <button id="restartBtn">↻ RESTART</button>
+            <button id="quitBtn">× QUIT</button>
+        </div>
+
+        <div class="instructions">
+            <span><kbd>SPACE</kbd><kbd>W</kbd><kbd>↑</kbd> JUMP</span>
+            <span><kbd>P</kbd> PAUSE</span>
+            <span><kbd>R</kbd> RESTART</span>
+            <span><kbd>Q</kbd> QUIT</span>
+        </div>
+
+        <section class="extra-info">
+
+            <div class="info-card">
+                <div class="info-title">// RECENT RUNS</div>
+                <ul class="score-list" id="historyList">
+                    <li><span>No runs yet</span><strong>---</strong></li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <div class="info-title">// TOP 5 SCORES</div>
+                <ul class="score-list" id="topList">
+                    <li><span>No records yet</span><strong>---</strong></li>
+                </ul>
+            </div>
+
+        </section>
+
+        <footer class="bottom-info">
+            <span>ROOT@DINO:~$ RUN_GAME</span>
+            <span>LOCAL SESSION // NO NETWORK REQUIRED</span>
+            <span>VERSION 1.0.0</span>
+        </footer>
+
+    </section>
+</main>
+
+<script>
+"use strict";
+
+// ============================================
+// GAME CONFIGURATION
+// ============================================
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const W = canvas.width;
+const H = canvas.height;
+const groundY = 245;
+
+let state = "start";
+let score = 0;
+let best = Number(localStorage.getItem("dinoBest")) || 0;
+let frame = 0;
+let speed = 5;
+let level = 1;
+let lastTime = 0;
+let accumulator = 0;
+
+let obstacles = [];
+let particles = [];
+let clouds = [];
+let spawnTimer = 75;
+let groundOffset = 0;
+
+let history = JSON.parse(
+    localStorage.getItem("dinoHistory") || "[]"
+);
+
+let topScores = JSON.parse(
+    localStorage.getItem("dinoTop") || "[]"
+);
+
+const player = {
+    x: 88,
+    y: groundY - 48,
+    w: 40,
+    h: 48,
+    vy: 0,
+    jumping: false,
+    grounded: true
+};
+
+const gravity = 0.76;
+const jumpPower = -14.2;
+
+// ============================================
+// STORAGE
+// ============================================
+
+function saveData(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (error) {
+        console.warn("Storage unavailable.");
+    }
+}
+
+// ============================================
+// UI
+// ============================================
+
+function updateStats() {
+    document.getElementById("score").textContent =
+        String(score).padStart(5, "0");
+
+    document.getElementById("best").textContent =
+        String(best).padStart(5, "0");
+
+    document.getElementById("level").textContent =
+        String(level).padStart(2, "0");
+
+    document.getElementById("speed").innerHTML =
+        (speed / 5).toFixed(1) + "<small> x</small>";
+}
+
+function setStatus(message) {
+    document.getElementById("status").textContent = message;
+    document.getElementById("sessionStatus").textContent = message;
+    document.getElementById("feedStatus").textContent = message;
+}
+
+function showOverlay(title, message, prompt) {
+    document.getElementById("overlayTitle").textContent = title;
+    document.getElementById("overlayText").innerHTML = message;
+    document.getElementById("overlayPrompt").textContent = prompt;
+    document.getElementById("overlay").style.display = "flex";
+}
+
+function hideOverlay() {
+    document.getElementById("overlay").style.display = "none";
+}
+
+function renderScoreLists() {
+    const historyList = document.getElementById("historyList");
+    const topList = document.getElementById("topList");
+
+    historyList.innerHTML = "";
+    topList.innerHTML = "";
+
+    if (!history.length) {
+        historyList.innerHTML =
+            "<li><span>No runs yet</span><strong>---</strong></li>";
+    } else {
+        history.forEach((value, index) => {
+            const li = document.createElement("li");
+            li.innerHTML =
+                "<span>RUN " + (index + 1) + "</span>" +
+                "<strong>" + String(value).padStart(5, "0") + "</strong>";
+            historyList.appendChild(li);
+        });
+    }
+
+    if (!topScores.length) {
+        topList.innerHTML =
+            "<li><span>No records yet</span><strong>---</strong></li>";
+    } else {
+        topScores.forEach((value, index) => {
+            const li = document.createElement("li");
+            li.innerHTML =
+                "<span>#" + (index + 1) + " PLAYER</span>" +
+                "<strong>" + String(value).padStart(5, "0") + "</strong>";
+            topList.appendChild(li);
+        });
+    }
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+function makeClouds() {
+    clouds = [
+        { x: 180, y: 55 },
+        { x: 480, y: 90 },
+        { x: 770, y: 45 }
+    ];
+}
+
+function resetGame() {
+    score = 0;
+    frame = 0;
+    speed = 5;
+    level = 1;
+
+    obstacles = [];
+    particles = [];
+
+    spawnTimer = 75;
+    groundOffset = 0;
+
+    player.y = groundY - player.h;
+    player.vy = 0;
+    player.jumping = false;
+    player.grounded = true;
+
+    makeClouds();
+    updateStats();
+}
+
+function startGame() {
+    if (state === "running") return;
+
+    if (["start", "over", "quit"].includes(state)) {
+        resetGame();
+    }
+
+    state = "running";
+    hideOverlay();
+    setStatus("GAME RUNNING");
+}
+
+function restartGame() {
+    resetGame();
+    state = "running";
+    hideOverlay();
+    setStatus("NEW RUN STARTED");
+}
+
+function togglePause() {
+    if (state === "running") {
+        state = "paused";
+
+        showOverlay(
+            "SYSTEM PAUSED",
+            "&gt; GAME SUSPENDED<br>&gt; TAKE A BREATHER, PLAYER",
+            "[ PRESS P TO RESUME ]"
+        );
+
+        setStatus("PAUSED");
+
+    } else if (state === "paused") {
+        state = "running";
+        hideOverlay();
+        setStatus("GAME RUNNING");
+    }
+}
+
+function quitGame() {
+    if (!["running", "paused"].includes(state)) return;
+
+    state = "quit";
+
+    showOverlay(
+        "SESSION CLOSED",
+        "&gt; GAME SESSION TERMINATED<br>&gt; YOUR SCORE HAS BEEN SAVED",
+        "[ PRESS SPACE TO PLAY AGAIN ]"
+    );
+
+    setStatus("SESSION CLOSED");
+}
+
+// ============================================
+// PLAYER
+// ============================================
+
+function jump() {
+    if (["start", "over", "quit"].includes(state)) {
+        startGame();
+        return;
+    }
+
+    if (state !== "running") return;
+
+    if (player.grounded) {
+        player.vy = jumpPower;
+        player.grounded = false;
+        player.jumping = true;
+    }
+}
+
+// ============================================
+// OBSTACLES
+// ============================================
+
+function addObstacle() {
+    const roll = Math.random();
+
+    if (roll < 0.65) {
+        const tall = Math.random() < 0.4;
+
+        obstacles.push({
+            type: "cactus",
+            x: W + 25,
+            w: tall ? 25 : 18,
+            h: tall ? 52 : 32
+        });
+
+    } else {
+        obstacles.push({
+            type: "bird",
+            x: W + 25,
+            w: 42,
+            h: 25,
+            y: Math.random() < 0.5
+                ? groundY - 82
+                : groundY - 118
+        });
+    }
+}
+
+// ============================================
+// PARTICLES
+// ============================================
+
+function spawnParticles(x, y) {
+    for (let i = 0; i < 13; i++) {
+        particles.push({
+            x,
+            y,
+            vx: (Math.random() - 0.5) * 5,
+            vy: (Math.random() - 0.5) * 5,
+            life: 28
+        });
+    }
+}
+
+// ============================================
+// GAME UPDATE
+// ============================================
+
+function update() {
+    if (state !== "running") return;
+
+    frame++;
+    score++;
+
+    level = Math.floor(score / 500) + 1;
+    speed = Math.min(5 + (level - 1) * 0.62, 12.5);
+
+    if (score % 4 === 0) {
+        updateStats();
+    }
+
+    // Dinosaur physics
+    player.vy += gravity;
+    player.y += player.vy;
+
+    if (player.y >= groundY - player.h) {
+        player.y = groundY - player.h;
+        player.vy = 0;
+        player.grounded = true;
+        player.jumping = false;
+    }
+
+    // Moving ground
+    groundOffset = (groundOffset + speed) % W;
+
+    // Clouds
+    clouds.forEach(cloud => {
+        cloud.x -= speed * 0.22;
+
+        if (cloud.x < -100) {
+            cloud.x = W + 55;
+        }
+    });
+
+    // Spawn obstacles
+    spawnTimer--;
+
+    if (spawnTimer <= 0) {
+        addObstacle();
+
+        spawnTimer = Math.max(
+            48,
+            94 + Math.random() * 52 - level * 2.5
+        );
+    }
+
+    // Move obstacles
+    obstacles.forEach(obstacle => {
+        obstacle.x -= speed;
+    });
+
+    obstacles = obstacles.filter(
+        obstacle => obstacle.x + obstacle.w > -5
+    );
+
+    // Collision detection
+    const px = player.x + 8;
+    const py = player.y + 6;
+    const pw = player.w - 15;
+    const ph = player.h - 10;
+
+    for (const obstacle of obstacles) {
+        const oy = obstacle.type === "bird"
+            ? obstacle.y
+            : groundY - obstacle.h;
+
+        if (
+            px < obstacle.x + obstacle.w - 5 &&
+            px + pw > obstacle.x + 5 &&
+            py < oy + obstacle.h - 3 &&
+            py + ph > oy + 3
+        ) {
+            gameOver();
+            return;
+        }
+    }
+
+    // Particles
+    particles.forEach(particle => {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.life--;
+    });
+
+    particles = particles.filter(
+        particle => particle.life > 0
+    );
+}
+
+// ============================================
+// GAME OVER
+// ============================================
+
+function gameOver() {
+    state = "over";
+
+    spawnParticles(
+        player.x + 20,
+        player.y + 20
+    );
+
+    best = Math.max(best, score);
+
+    history.unshift(score);
+    history = history.slice(0, 5);
+
+    topScores.push(score);
+    topScores.sort((a, b) => b - a);
+    topScores = topScores.slice(0, 5);
+
+    saveData("dinoBest", String(best));
+    saveData("dinoHistory", JSON.stringify(history));
+    saveData("dinoTop", JSON.stringify(topScores));
+
+    updateStats();
+    renderScoreLists();
+    setStatus("GAME OVER");
+
+    showOverlay(
+        "GAME OVER",
+        "&gt; FINAL SCORE: " +
+        String(score).padStart(5, "0") +
+        "<br>&gt; PERSONAL BEST: " +
+        String(best).padStart(5, "0") +
+        "<br>&gt; TRY AGAIN. BEAT YOUR RECORD.",
+        "[ PRESS R OR RESTART TO PLAY AGAIN ]"
+    );
+}
+
+// ============================================
+// DRAWING HELPERS
+// ============================================
+
+function drawText(
+    value,
+    x,
+    y,
+    size = 15,
+    color = "#39ff75"
+) {
+    ctx.fillStyle = color;
+    ctx.font = size + "px 'IBM Plex Mono', monospace";
+    ctx.fillText(value, x, y);
+}
+
+function drawDino() {
+    const x = player.x;
+    const y = player.y;
+
+    ctx.save();
+
+    ctx.fillStyle = "#39ff75";
+    ctx.shadowColor = "#39ff75";
+    ctx.shadowBlur = 10;
+    ctx.font = "bold 39px monospace";
+
+    if (state === "over") {
+        ctx.fillText("x>", x, y + 30);
+        ctx.fillText("/\\", x + 2, y + 49);
+    } else {
+        ctx.fillText("@>", x, y + 30);
+
+        const running = Math.floor(frame / 6) % 2;
+
+        if (player.jumping) {
+            ctx.fillText("/\\", x + 2, y + 49);
+        } else {
+            ctx.fillText(
+                running ? "\\/" : "/\\",
+                x + 2,
+                y + 49
+            );
+        }
+    }
+
+    ctx.restore();
+}
+
+function drawCactus(obstacle) {
+    const x = obstacle.x;
+    const y = groundY - obstacle.h;
+
+    ctx.save();
+    ctx.fillStyle = "#39ff75";
+    ctx.shadowColor = "#39ff75";
+    ctx.shadowBlur = 8;
+
+    const stem = Math.max(6, obstacle.w * 0.3);
+
+    ctx.fillRect(
+        x + obstacle.w * 0.35,
+        y,
+        stem,
+        obstacle.h
+    );
+
+    ctx.fillRect(
+        x,
+        y + obstacle.h * 0.38,
+        obstacle.w * 0.42,
+        5
+    );
+
+    ctx.fillRect(
+        x,
+        y + obstacle.h * 0.2,
+        5,
+        obstacle.h * 0.2
+    );
+
+    ctx.fillRect(
+        x + obstacle.w * 0.62,
+        y + obstacle.h * 0.58,
+        obstacle.w * 0.38,
+        5
+    );
+
+    ctx.fillRect(
+        x + obstacle.w * 0.82,
+        y + obstacle.h * 0.36,
+        5,
+        obstacle.h * 0.23
+    );
+
+    ctx.restore();
+}
+
+function drawBird(obstacle) {
+    const wing = Math.floor(frame / 6) % 2;
+
+    ctx.save();
+
+    ctx.fillStyle = "#b5ffc8";
+    ctx.shadowColor = "#39ff75";
+    ctx.shadowBlur = 8;
+    ctx.font = "bold 25px monospace";
+
+    ctx.fillText(
+        wing ? "\\v/" : "/^\\",
+        obstacle.x,
+        obstacle.y + 21
+    );
+
+    ctx.restore();
+}
+
+// ============================================
+// MAIN DRAW FUNCTION
+// ============================================
+
+function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    ctx.fillStyle = "#010501";
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid
+    ctx.strokeStyle = "rgba(35,137,74,.17)";
+    ctx.lineWidth = 1;
+
+    for (let x = 0; x < W; x += 30) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+    }
+
+    for (let y = 0; y < H; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+    }
+
+    // Clouds
+    clouds.forEach(cloud => {
+        drawText(
+            "(~~~)",
+            cloud.x,
+            cloud.y,
+            15,
+            "#176d32"
+        );
+    });
+
+    // Ground glow
+    const glow = ctx.createLinearGradient(
+        0, groundY - 5, 0, groundY + 15
+    );
+
+    glow.addColorStop(0, "rgba(57,255,117,.15)");
+    glow.addColorStop(1, "rgba(57,255,117,0)");
+
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, groundY - 5, W, 20);
+
+    // Ground line
+    ctx.strokeStyle = "#39ff75";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(W, groundY);
+    ctx.stroke();
+
+    // Ground details
+    for (let i = 0; i < 70; i++) {
+        const x = (
+            (i * 19 - groundOffset) % W + W
+        ) % W;
+
+        ctx.fillStyle = "#176d32";
+
+        ctx.fillRect(
+            x,
+            groundY + 9 + (i % 3),
+            3 + (i % 2),
+            2
+        );
+    }
+
+    // Obstacles
+    obstacles.forEach(obstacle => {
+        if (obstacle.type === "cactus") {
+            drawCactus(obstacle);
+        } else {
+            drawBird(obstacle);
+        }
+    });
+
+    // Dinosaur
+    drawDino();
+
+    // Particles
+    particles.forEach(particle => {
+        ctx.fillStyle = "#b5ffc8";
+        ctx.globalAlpha = Math.max(
+            0,
+            particle.life / 28
+        );
+
+        ctx.fillRect(
+            particle.x,
+            particle.y,
+            3,
+            3
+        );
+    });
+
+    ctx.globalAlpha = 1;
+
+    // Terminal details
+    drawText("SYS.RUN", 14, 22, 11, "#176d32");
+    drawText("FPS: 60", W - 91, 22, 11, "#176d32");
+    drawText("PLAYER_01", 14, H - 13, 10, "#176d32");
+
+    if (state === "paused") {
+        drawText(
+            "|| PAUSED ||",
+            W / 2 - 60,
+            150,
+            21
+        );
+    }
+}
+
+// ============================================
+// GAME LOOP
+// ============================================
+
+function loop(timestamp) {
+    if (!lastTime) {
+        lastTime = timestamp;
+    }
+
+    const delta = Math.min(
+        timestamp - lastTime,
+        100
+    );
+
+    lastTime = timestamp;
+    accumulator += delta;
+
+    while (accumulator >= 1000 / 60) {
+        update();
+        accumulator -= 1000 / 60;
+    }
+
+    draw();
+
+    requestAnimationFrame(loop);
+}
+
+// ============================================
+// KEYBOARD CONTROLS
+// ============================================
+
+document.addEventListener("keydown", event => {
+    const key = event.key.toLowerCase();
+
+    if ([" ", "arrowup", "w"].includes(key)) {
+        event.preventDefault();
+
+        if (state !== "paused") {
+            jump();
+        }
+    }
+
+    if (key === "p") {
+        togglePause();
+    }
+
+    if (key === "r") {
+        restartGame();
+    }
+
+    if (key === "q") {
+        quitGame();
+    }
+});
+
+// ============================================
+// MOUSE AND TOUCH CONTROLS
+// ============================================
+
+canvas.addEventListener("pointerdown", () => {
+    jump();
+});
+
+// ============================================
+// BUTTON CONTROLS
+// ============================================
+
+document.getElementById("startBtn")
+    .addEventListener("click", startGame);
+
+document.getElementById("pauseBtn")
+    .addEventListener("click", togglePause);
+
+document.getElementById("restartBtn")
+    .addEventListener("click", restartGame);
+
+document.getElementById("quitBtn")
+    .addEventListener("click", quitGame);
+
+// ============================================
+// INITIAL SETUP
+// ============================================
+
+makeClouds();
+updateStats();
+renderScoreLists();
+draw();
+
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
