@@ -1,1228 +1,2880 @@
-import { inject } from '@vercel/analytics'
-import './style.css'
+/* =========================================================
+   FONT
+========================================================= */
 
-const app = document.querySelector<HTMLElement>('#app')
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
 
-if (!app) {
-  throw new Error('App element not found')
+
+/* =========================================================
+   ROOT
+========================================================= */
+
+:root {
+  --bg: #030604;
+  --bg-soft: #060c07;
+
+  --green: #9cff9c;
+  --green-bright: #caffca;
+  --green-mid: #70d879;
+  --green-dark: #1d6328;
+
+  --text: #dcebdd;
+  --text-soft: #a5bca7;
+  --text-muted: #708271;
+
+  --border: rgba(120, 190, 125, 0.14);
+  --border-bright: rgba(145, 255, 145, 0.32);
+
+  --card: rgba(4, 10, 6, 0.72);
+  --card-hover: rgba(7, 16, 9, 0.84);
+
+  --mono: "IBM Plex Mono", monospace;
+
+  --radius: 7px;
 }
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at 50% -15%,
+      rgba(65, 125, 68, 0.08),
+      transparent 42%
+    ),
+    var(--bg);
+
+  color: var(--text);
+
+  font-family: var(--mono);
+
+  font-size: 14px;
+
+  line-height: 1.55;
+
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
 
 /* =========================================================
    MATRIX BACKGROUND
 ========================================================= */
 
-const matrixCanvas = document.createElement('canvas')
-matrixCanvas.id = 'matrixCanvas'
-document.body.prepend(matrixCanvas)
+#matrixCanvas {
+  position: fixed;
 
-const ctx = matrixCanvas.getContext('2d')
+  top: 0;
+  left: 0;
 
-if (ctx) {
-  const characters =
-    'アァカサタナハマヤャラワガザダバパパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン0123456789'
+  width: 100vw;
+  height: 100vh;
 
-  const fontSize = 14
-  let width = window.innerWidth
-  let height = window.innerHeight
-  let columns = Math.floor(width / fontSize)
+  pointer-events: none;
 
-  let drops: number[] = Array.from(
-    { length: columns },
-    () => Math.random() * -100,
-  )
+  z-index: 0;
 
-  const resize = () => {
-    width = window.innerWidth
-    height = window.innerHeight
+  opacity: 0.72;
 
-    matrixCanvas.width = width
-    matrixCanvas.height = height
-    matrixCanvas.style.width = `${width}px`
-    matrixCanvas.style.height = `${height}px`
+  mix-blend-mode: screen;
+}
 
-    columns = Math.floor(width / fontSize)
+body::before {
+  content: "";
 
-    drops = Array.from(
-      { length: columns },
-      () => Math.random() * -100,
-    )
+  position: fixed;
 
-    ctx.clearRect(0, 0, width, height)
-  }
+  inset: 0;
 
-  const draw = () => {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.055)'
-    ctx.fillRect(0, 0, width, height)
+  z-index: 0;
 
-    ctx.font = `${fontSize}px Arial, monospace`
-    ctx.textBaseline = 'top'
+  pointer-events: none;
 
-    for (let i = 0; i < columns; i++) {
-      const character =
-        characters[Math.floor(Math.random() * characters.length)]
+  background:
+    radial-gradient(
+      circle at center,
+      transparent 0%,
+      rgba(0, 5, 2, 0.08) 45%,
+      rgba(0, 3, 1, 0.30) 100%
+    );
+}
 
-      const x = i * fontSize
-      const y = drops[i] * fontSize
-      const random = Math.random()
+body::after {
+  content: "";
 
-      if (random > 0.985) {
-        ctx.fillStyle = '#d7ffd7'
-        ctx.shadowColor = '#00ff41'
-        ctx.shadowBlur = 8
-      } else if (random > 0.92) {
-        ctx.fillStyle = '#39ff66'
-        ctx.shadowColor = '#00ff41'
-        ctx.shadowBlur = 4
-      } else {
-        ctx.fillStyle = '#149b35'
-        ctx.shadowBlur = 0
-      }
+  position: fixed;
 
-      ctx.fillText(character, x, y)
-      ctx.shadowBlur = 0
+  inset: 0;
 
-      drops[i] += 0.65
+  z-index: 0;
 
-      if (
-        drops[i] * fontSize > height &&
-        Math.random() > 0.975
-      ) {
-        drops[i] = Math.random() * -30
-      }
-    }
+  pointer-events: none;
 
-    requestAnimationFrame(draw)
-  }
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(55, 180, 65, 0.055),
+      transparent 55%
+    );
 
-  resize()
-  window.addEventListener('resize', resize)
-  draw()
+  opacity: 0.9;
+}
+
+.site-header,
+.bento-grid,
+.social-card,
+footer {
+  position: relative;
+
+  z-index: 1;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.site-header {
+  width: min(
+    calc(100% - 40px),
+    1280px
+  );
+
+  margin: 0 auto;
+
+  padding: 22px 0 18px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  position: relative;
+
+  z-index: 10;
+}
+
+.brand {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  color: var(--green-bright);
+
+  font-size: 14px;
+
+  font-weight: 500;
+
+  letter-spacing: -0.025em;
+}
+
+.brand-dot {
+  font-size: 9px;
+
+  color: var(--green);
+
+  text-shadow:
+    0 0 7px rgba(130, 255, 130, 0.65);
+}
+
+.main-nav {
+  display: flex;
+
+  align-items: center;
+
+  gap: 24px;
+}
+
+.main-nav a {
+  position: relative;
+
+  color: var(--text-muted);
+
+  font-size: 12px;
+
+  transition:
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.main-nav a:hover,
+.main-nav a.active {
+  color: var(--green);
+}
+
+.main-nav a.active::after {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  right: 0;
+
+  bottom: -6px;
+
+  height: 1px;
+
+  background: var(--green);
+
+  box-shadow:
+    0 0 7px rgba(150, 255, 150, 0.4);
+}
+
+
+/* =========================================================
+   BENTO GRID
+========================================================= */
+
+.bento-grid {
+  width: min(
+    calc(100% - 40px),
+    1280px
+  );
+
+  margin: 0 auto;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(12, minmax(0, 1fr));
+
+  grid-template-areas:
+    "whoami whoami whoami whoami data data data data spotify spotify spotify spotify"
+    "likes likes likes likes toolkit toolkit toolkit toolkit posts posts posts posts"
+    "journey journey journey journey journey journey journey journey certs certs certs certs"
+    "journey journey journey journey journey journey journey journey projects projects projects projects"
+    "github github github github github github github github coffee coffee visitors visitors";
+
+  gap: 10px;
+
+  padding-bottom: 10px;
+
+  grid-template-rows:
+    auto
+    auto
+    auto
+    auto
+    auto;
+
+  align-items: stretch;
+}
+
+
+/* =========================================================
+   CARD BASE
+========================================================= */
+
+.card,
+.social-card,
+.coffee-card {
+  position: relative;
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(8, 18, 10, 0.74),
+      rgba(2, 7, 4, 0.76)
+    );
+
+  box-shadow:
+    inset 0 1px 0 rgba(180, 255, 180, 0.018),
+    0 8px 30px rgba(0, 0, 0, 0.12);
+
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.card:hover,
+.social-card:hover,
+.coffee-card:hover {
+  border-color: var(--border-bright);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(10, 21, 12, 0.8),
+      rgba(3, 9, 5, 0.82)
+    );
+
+  box-shadow:
+    inset 0 1px 0 rgba(180, 255, 180, 0.025),
+    0 10px 34px rgba(0, 0, 0, 0.16);
+}
+
+
+/* =========================================================
+   CARD HEADING
+========================================================= */
+
+.card-heading {
+  min-height: 42px;
+
+  padding:
+    11px
+    14px
+    9px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  border-bottom: 1px solid
+    rgba(110, 190, 116, 0.08);
+
+  color: var(--text-muted);
+
+  font-size: 12px;
+
+  line-height: 1.3;
+
+  letter-spacing: 0.035em;
+
+  text-transform: lowercase;
+}
+
+.card-heading a {
+  color: var(--green-mid);
+
+  transition: color 160ms ease;
+}
+
+.card-heading a:hover {
+  color: var(--green-bright);
+}
+
+
+/* =========================================================
+   GRID POSITIONS
+========================================================= */
+
+.whoami-card {
+  grid-area: whoami;
+}
+
+.data-card {
+  grid-area: data;
+}
+
+.spotify-card {
+  grid-area: spotify;
+}
+
+.likes-card {
+  grid-area: likes;
+}
+
+.toolkit-card {
+  grid-area: toolkit;
+}
+
+.posts-card {
+  grid-area: posts;
+}
+
+.journey-card {
+  grid-area: journey;
+}
+
+.certifications-card {
+  grid-area: certs;
+}
+
+.projects-card {
+  grid-area: projects;
+}
+
+.github-card {
+  grid-area: github;
+}
+
+.coffee-card {
+  grid-area: coffee;
+}
+
+.visitors-card {
+  grid-area: visitors;
+}
+
+
+/* =========================================================
+   WHOAMI
+========================================================= */
+
+.whoami-body {
+  min-height: 250px;
+
+  height: auto;
+
+  padding: 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    125px minmax(0, 1fr);
+
+  gap: 20px;
+
+  align-items: center;
+}
+
+.profile-area {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 9px;
+}
+
+
+/* =========================================================
+   PROFILE IMAGE
+========================================================= */
+
+.profile-image {
+  width: 112px;
+  height: 112px;
+
+  position: relative;
+
+  overflow: hidden;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  border: 2px solid
+    rgba(105, 255, 120, 0.72);
+
+  background:
+    linear-gradient(
+      135deg,
+      #102013,
+      #050a06
+    );
+
+  box-shadow:
+    0 0 0 3px rgba(80, 210, 90, 0.07),
+    0 0 18px rgba(65, 225, 85, 0.18),
+    0 0 42px rgba(50, 180, 65, 0.08);
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.profile-image:hover {
+  border-color: var(--green-bright);
+
+  box-shadow:
+    0 0 0 3px rgba(80, 210, 90, 0.09),
+    0 0 22px rgba(90, 255, 110, 0.26),
+    0 0 48px rgba(50, 180, 65, 0.11);
+
+  transform: translateY(-1px);
+}
+
+.profile-image img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  border-radius: 50%;
+}
+
+.image-fallback {
+  position: absolute;
+
+  inset: 0;
+
+  display: none;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: var(--green);
+
+  font-size: 42px;
+}
+
+.profile-terminal {
+  color: var(--text-muted);
+
+  font-size: 10px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   WHOAMI TEXT
+========================================================= */
+
+.whoami-text {
+  min-width: 0;
+
+  max-width: 100%;
+
+  padding-right: 2px;
+}
+
+.whoami-text p {
+  margin:
+    0
+    0
+    13px;
+
+  color: var(--text-soft);
+
+  font-size: 14px;
+
+  line-height: 1.7;
+}
+
+.whoami-text .hello {
+  margin-bottom: 6px;
+
+  color: var(--green);
+
+  font-size: 16px;
+}
+
+.whoami-text strong {
+  color: var(--text);
+
+  font-weight: 500;
+}
+
+.identity-row {
+  margin-top: 15px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 7px;
+}
+
+.identity-row div {
+  min-width: 0;
+
+  min-height: 48px;
+
+  padding: 8px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  gap: 4px;
+
+  border: 1px solid
+    rgba(110, 190, 116, 0.1);
+
+  border-radius: 5px;
+
+  background:
+    rgba(50, 120, 55, 0.025);
+}
+
+.identity-row small {
+  color: var(--text-muted);
+
+  font-size: 9px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.07em;
+}
+
+.identity-row span {
+  overflow: hidden;
+
+  color: var(--green);
+
+  font-size: 11px;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   DATA
+========================================================= */
+
+.data-body {
+  height: auto;
+
+  min-height: 250px;
+
+  padding: 18px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+}
+
+.big-line {
+  margin: 3px 0 14px;
+
+  color: var(--green-bright);
+
+  font-size: clamp(
+    27px,
+    2.5vw,
+    36px
+  );
+
+  line-height: 1.05;
+
+  letter-spacing: -0.065em;
+}
+
+.muted {
+  color: var(--text-muted);
+
+  font-size: 12px;
+
+  line-height: 1.65;
+}
+
+.skill-mini-row {
+  margin-top: 17px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 6px;
+}
+
+.skill-mini-row span,
+.likes-list span,
+.toolkit-list span {
+  min-width: 0;
+
+  padding:
+    8px
+    8px;
+
+  border: 1px solid
+    rgba(110, 190, 116, 0.11);
+
+  border-radius: 5px;
+
+  color: var(--text-soft);
+
+  background:
+    rgba(50, 120, 55, 0.025);
+
+  font-size: 11px;
+
+  line-height: 1.35;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   SPOTIFY
+========================================================= */
+
+.spotify-body {
+  height: auto;
+
+  min-height: 250px;
+
+  padding: 15px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+}
+
+.spotify-body > .muted {
+  margin:
+    0
+    0
+    5px;
+}
+
+.song {
+  min-height: 45px;
+
+  padding: 6px 2px;
+
+  display: grid;
+
+  grid-template-columns:
+    24px minmax(0, 1fr) 16px;
+
+  align-items: center;
+
+  gap: 7px;
+
+  border-bottom: 1px solid
+    rgba(110, 190, 116, 0.07);
+
+  transition:
+    padding 160ms ease,
+    color 160ms ease;
+}
+
+.song:last-child {
+  border-bottom: 0;
+}
+
+.song:hover {
+  padding-left: 7px;
+
+  color: var(--green);
+}
+
+.song-number {
+  color: var(--text-muted);
+
+  font-size: 10px;
+}
+
+.song-info {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.song-info strong {
+  overflow: hidden;
+
+  color: var(--text-soft);
+
+  font-size: 11px;
+
+  font-weight: 400;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.song-info small {
+  color: var(--text-muted);
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   LIKES
+========================================================= */
+
+.likes-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.likes-card > .muted {
+  margin: 0;
+  padding: 13px 15px 2px;
+  color: var(--green);
+}
+
+.likes-list {
+  padding: 10px 14px 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  flex: 1;
+  align-content: center;
+}
+
+.likes-list span {
+  min-height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   PLAY MY GAME — LIKES CARD
+========================================================= */
+
+.xp-game-link {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(57, 255, 102, 0.2);
+  border-radius: 12px;
+  background: rgba(0, 255, 65, 0.035);
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.xp-game-link:hover {
+  border-color: rgba(57, 255, 102, 0.65);
+  background: rgba(0, 255, 65, 0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.08);
+}
+
+.xp-game-top,
+.xp-game-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+}
+
+.xp-game-top {
+  color: #7caa86;
+}
+
+.xp-game-content {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.xp-game-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 0 7px rgba(57, 255, 102, 0.3));
+}
+
+.xp-game-content strong {
+  display: block;
+  color: var(--green);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.xp-game-content p {
+  margin: 5px 0 0;
+  color: #9aab9e;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.xp-game-bottom {
+  padding: 9px 12px;
+  border: 1px solid var(--border-bright);
+  border-radius: 5px;
+  background: rgba(80, 200, 90, 0.07);
+  color: var(--green-bright);
+  font-weight: 600;
+  justify-content: center;
+  gap: 8px;
+}
+
+.xp-game-link:hover .xp-game-bottom {
+  background: rgba(80, 200, 90, 0.15);
+  border-color: var(--green);
+  box-shadow: 0 0 12px rgba(120, 255, 130, 0.12);
+}
+
+.xp-game-link:hover .xp-game-bottom span:last-child {
+  transform: translateX(4px);
+}
+
+.xp-game-bottom span:last-child {
+  transition: transform 0.2s ease;
+}
+/* =========================================================
+   TOOLKIT
+========================================================= */
+
+.toolkit-card {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.toolkit-list {
+  flex: 1;
+
+  padding: 12px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  grid-auto-rows: minmax(36px, 1fr);
+
+  gap: 6px;
+
+  align-content: stretch;
+}
+
+.toolkit-list span {
+  min-height: 36px;
+
+  padding: 7px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: 1px solid
+    rgba(110, 190, 116, 0.12);
+
+  border-radius: 5px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(50, 120, 55, 0.045),
+      rgba(20, 60, 25, 0.018)
+    );
+
+  color: var(--text-soft);
+
+  font-size: 11px;
+
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.toolkit-list span:hover {
+  color: var(--green-bright);
+
+  border-color:
+    rgba(145, 255, 145, 0.3);
+
+  background:
+    rgba(70, 150, 75, 0.07);
+
+  transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   JOURNEY
+========================================================= */
+
+.journey-card {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.journey-item {
+  flex: 1;
+
+  min-height: 0;
+
+  padding:
+    11px
+    15px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  border-bottom: 1px solid
+    rgba(110, 190, 116, 0.07);
+}
+
+.journey-item:last-child {
+  border-bottom: 0;
+}
+
+.journey-top {
+  display: flex;
+
+  align-items: baseline;
+
+  justify-content: space-between;
+
+  gap: 10px;
+}
+
+.journey-top strong {
+  color: var(--text);
+
+  font-size: 12px;
+
+  font-weight: 500;
+}
+
+.journey-top small {
+  color: var(--text-muted);
+
+  font-size: 9px;
+
+  white-space: nowrap;
+}
+
+.journey-item > a {
+  display: inline-block;
+
+  margin-top: 5px;
+
+  color: var(--green-mid);
+
+  font-size: 10px;
+}
+
+.journey-item > a:hover {
+  color: var(--green);
+}
+
+.journey-item p {
+  margin:
+    5px
+    0
+    0;
+
+  color: var(--text-muted);
+
+  font-size: 11px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   PROJECTS
+========================================================= */
+
+.projects-card {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.project-row {
+  flex: 1;
+
+  min-height: 47px;
+
+  padding:
+    9px
+    14px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 15px;
+
+  border-bottom: 1px solid
+    rgba(110, 190, 116, 0.07);
+
+  transition:
+    padding 160ms ease,
+    background 160ms ease;
+}
+
+.project-row:last-child {
+  border-bottom: 0;
+}
+
+.project-row:hover {
+  padding-left: 18px;
+
+  background:
+    rgba(80, 150, 80, 0.035);
+}
+
+.project-row > span:first-child {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.project-row strong {
+  overflow: hidden;
+
+  color: var(--text);
+
+  font-size: 11px;
+
+  font-weight: 400;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.project-row small {
+  color: var(--text-muted);
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   SUBSTACK / RECENT POSTS
+========================================================= */
+
+.posts-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.post-row {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  text-decoration: none;
+
+  border-bottom: 1px solid
+    rgba(110, 190, 116, 0.07);
+
+  transition:
+    background 160ms ease,
+    padding 160ms ease;
+}
+
+.post-row:last-child {
+  border-bottom: 0;
+}
+
+.post-row span {
+  min-width: 24px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.post-row strong {
+  flex: 1;
+  min-width: 0;
+
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 400;
+
+  transition: color 160ms ease;
+}
+
+.post-row .post-arrow {
+  min-width: auto;
+  color: var(--text-muted);
+  font-size: 11px;
+
+  opacity: 0;
+  transform: translate(-4px, 4px);
+
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.post-row:hover {
+  background: rgba(110, 190, 116, 0.035);
+  padding-left: 18px;
+}
+
+.post-row:hover strong {
+  color: var(--green);
+}
+
+.post-row:hover .post-arrow {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+.post-row:focus-visible {
+  outline: 1px solid var(--green);
+  outline-offset: -2px;
 }
 
 /* =========================================================
-   PORTFOLIO PAGE
+   CERTIFICATIONS
 ========================================================= */
 
-app.innerHTML = `
+.certifications-card {
+  display: flex;
 
-<header class="site-header">
+  flex-direction: column;
+}
 
-  <a href="#home" class="brand">
-    <span class="brand-dot">●</span>
-    <span>aria.exe</span>
-  </a>
+.cert-list {
+  flex: 1;
 
-  <nav class="main-nav" aria-label="Main navigation">
-    <a href="#home" class="active">home</a>
-    <a href="#resume">resume</a>
-    <a href="#blog">blog</a>
-    <a href="#gallery">gallery</a>
-  </nav>
+  padding: 12px;
 
-</header>
+  display: grid;
 
-<main id="home" class="bento-grid">
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
 
-  <!-- WHOAMI -->
+  grid-auto-rows: minmax(36px, 1fr);
 
-  <section class="card whoami-card">
+  gap: 6px;
 
-    <div class="card-heading">
-      <span>~/whoami</span>
-      <span class="tiny-status">
-        <i></i>
-        idle
-      </span>
-    </div>
+  align-content: stretch;
+}
 
-    <div class="whoami-body">
+.cert-list span {
+  min-height: 36px;
 
-      <div class="profile-area">
+  padding:
+    7px
+    9px;
 
-        <div class="profile-image">
-          <img src="/aria.jpeg" alt="Arya PL" />
-          <span class="image-fallback">A</span>
-        </div>
+  display: flex;
 
-        <button
-          type="button"
-          class="heart-trigger"
-          id="heart-trigger"
-          aria-label="Open a little letter"
-          aria-expanded="false"
-        >
-          <span class="heart-symbol">♥</span>
-        </button>
+  align-items: center;
 
-        <div
-          class="heart-letter"
-          id="heart-letter"
-          aria-hidden="true"
-        >
+  justify-content: center;
 
-          <div class="letter-paper">
+  text-align: center;
 
-            <button
-              type="button"
-              class="letter-close"
-              id="letter-close"
-              aria-label="Close letter"
-            >
-              ×
-            </button>
+  border: 1px solid
+    rgba(110, 190, 116, 0.12);
 
-            <div class="letter-line"></div>
+  border-radius: 5px;
 
-            <p class="letter-greeting">
-              hey, kuttu.
-            </p>
+  border-left:
+    1px solid
+    rgba(110, 190, 116, 0.23);
 
-            <p>
-              just wanted to leave
-              a tiny piece of my heart here
-              for you to find.
-            </p>
+  color: var(--text-soft);
 
-            <p>keep it safe. ♡</p>
+  background:
+    linear-gradient(
+      145deg,
+      rgba(50, 120, 55, 0.04),
+      rgba(20, 60, 25, 0.018)
+    );
 
-            <p class="letter-signoff">
-              — aria ♡
-            </p>
+  font-size: 10px;
 
-          </div>
+  line-height: 1.4;
 
-        </div>
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
 
-      </div>
+.cert-list span:hover {
+  color: var(--green-bright);
 
-      <div class="whoami-text">
+  border-color:
+    rgba(145, 255, 145, 0.3);
 
-        <p class="hello">Hi there!</p>
+  background:
+    rgba(70, 150, 75, 0.065);
 
-        <p>
-          This is <strong>Arya PL</strong>.
-        </p>
+  transform: translateY(-1px);
+}
 
-        <p>
-          <small>
-            An aspiring
-            <strong>Data Analyst</strong>
-            currently pursuing
-            <strong>
-              MSc Computer Science with Data Analytics
-            </strong>.
-          </small>
-        </p>
-
-        <div class="identity-row">
-
-          <div>
-            <small>pronouns</small>
-            <span>she/her</span>
-          </div>
-
-          <div>
-            <small>MBTI</small>
-            <span>INFP-T</span>
-          </div>
-
-          <div>
-            <small>zodiac</small>
-            <span>Taurus</span>
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-  <!-- DATA -->
-
-  <section class="card data-card">
-
-    <div class="card-heading">
-      <span>~/data</span>
-    </div>
-
-    <div class="data-body">
-
-      <p class="big-line">
-        Turning Data
-        into Stories.
-      </p>
-
-      <p class="muted">
-        curious about patterns,
-        insights & visualizations
-      </p>
-
-      <div class="skill-mini-row">
-        <span>Python</span>
-        <span>SQL</span>
-        <span>Excel</span>
-      </div>
-
-    </div>
-
-  </section>
-
-  <!-- SPOTIFY -->
-
-  <section class="card spotify-card">
-
-    <div class="card-heading">
-
-      <span>~/spotify</span>
-
-      <a
-        href="https://open.spotify.com/user/snmtm82rsdg0jo7z8nnj32623"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Open Spotify profile"
-      >
-        ↗
-      </a>
-
-    </div>
-
-    <div class="spotify-body">
-
-      <p class="muted">lately listening to</p>
-
-      <a
-        class="song"
-        href="https://open.spotify.com/search/Baby%20Justin%20Bieber"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span class="song-number">01</span>
-
-        <span class="song-info">
-          <strong>Baby</strong>
-          <small>Justin Bieber</small>
-        </span>
-
-        <span>↗</span>
-      </a>
-
-      <a
-        class="song"
-        href="https://open.spotify.com/track/7z7kvUQGwlC6iOl7vMuAr9?si=58255d3c33bb4b5b"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span class="song-number">02</span>
-
-        <span class="song-info">
-          <strong>Dancing in the Flames</strong>
-          <small>The Weeknd</small>
-        </span>
-
-        <span>↗</span>
-      </a>
-
-      <a
-        class="song"
-        href="https://open.spotify.com/search/There's%20Nothing%20Holdin'%20Me%20Back%20Shawn%20Mendes"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span class="song-number">03</span>
-
-        <span class="song-info">
-          <strong>There's Nothing Holdin' Me Back</strong>
-          <small>Shawn Mendes</small>
-        </span>
-
-        <span>↗</span>
-      </a>
-
-    </div>
-
-  </section>
-
-  <!-- LIKES -->
-
-  <section class="card likes-card">
-
-    <div class="card-heading">
-      <span>~/likes</span>
-    </div>
-
-    <p class="muted">
-      things that keep me alive offline ✧
-    </p>
-
-    <div class="likes-list">
-      <span>movies</span>
-      <span>series</span>
-      <span>anime</span>
-      <span>gaming</span>
-      <span>music</span>
-      <span>cooking</span>
-      <span>conspiracy theories</span>
-      <span>yapping</span>
-    </div>
-
-    <a
-      href="/dinorun.html"
-      class="xp-game-link"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-
-      <div class="xp-game-top">
-        <span>~/side.quest</span>
-      </div>
-
-      <div class="xp-game-content">
-
-        <span class="xp-game-icon">🦖</span>
-
-        <div>
-          <strong>wanna play a game?</strong>
-          <p>i built a little dino game. come try it!</p>
-        </div>
-
-      </div>
-
-      <div class="xp-game-bottom">
-        <span>PLAY!</span>
-      </div>
-
-    </a>
-
-  </section>
-
-  <!-- TOOLKIT -->
-
-  <section class="card toolkit-card">
-
-    <div class="card-heading">
-      <span>~/toolkit</span>
-    </div>
-
-    <div class="toolkit-list">
-      <span>Python</span>
-      <span>R</span>
-      <span>C++</span>
-      <span>SQL</span>
-      <span>Excel</span>
-      <span>Power BI</span>
-      <span>Tableau</span>
-      <span>Figma</span>
-      <span>GitHub</span>
-      <span>AI Agents</span>
-    </div>
-
-  </section>
-
-  <!-- JOURNEY -->
-
-  <section class="card journey-card" id="resume">
-
-    <div class="card-heading">
-      <span>~/journey</span>
-    </div>
-
-    <article class="journey-item">
-
-      <div class="journey-top">
-        <strong>MSc Computer Science (Data Analytics)</strong>
-        <small>jun'26 — mar'28</small>
-      </div>
-
-      <a
-        href="https://rajagiri.edu/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Rajagiri College of Social Sciences ↗
-      </a>
-
-      <p>
-        specialising in data analytics,
-        visualization and business intelligence.
-      </p>
-
-    </article>
-
-    <article class="journey-item">
-
-      <div class="journey-top">
-        <strong>Process Associate</strong>
-        <small>aug'25 — may'26</small>
-      </div>
-
-      <a
-        href="https://india.prochant.com/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Prochant India ↗
-      </a>
-
-      <p>
-        worked in healthcare revenue cycle
-        management and accounts receivable.
-      </p>
-
-    </article>
-
-    <article class="journey-item">
-
-      <div class="journey-top">
-        <strong>Bachelor of Computer Applications</strong>
-        <small>jun'22 — mar'25</small>
-      </div>
-
-      <a
-        href="https://cnc.ac.in/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Christ Nagar College ↗
-      </a>
-
-      <p>
-        foundation in programming, databases,
-        software development and computer science.
-      </p>
-
-    </article>
-
-  </section>
-
-  <!-- PROJECTS -->
-
-  <section class="card projects-card">
-
-    <div class="card-heading">
-
-      <span>~/projects</span>
-
-      <a
-        href="https://github.com/arya-prasanth"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        all projects →
-      </a>
-
-    </div>
-
-    <a
-      class="project-row"
-      href="https://github.com/arya-prasanth"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-
-      <span>
-        <strong>TravelMate AI</strong>
-        <small>AI travel assistant</small>
-      </span>
-
-      <span>↗</span>
-
-    </a>
-
-    <a
-      class="project-row"
-      href="https://github.com/arya-prasanth"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-
-      <span>
-        <strong>UniCredit</strong>
-        <small>banking web application</small>
-      </span>
-
-      <span>↗</span>
-
-    </a>
-
-  </section>
-
-  <!-- SUBSTACK -->
-
-  <section class="card posts-card" id="blog">
-
-    <div class="card-heading">
-
-      <span>~/words.that.stayed</span>
-
-      <a
-        href="https://substack.com/@aryaahhh"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        ↗
-      </a>
-
-    </div>
-
-    <a
-      href="https://substack.com/home/post/p-206972357"
-      class="post-row"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <span>01</span>
-      <strong>› if a birds falls in love with a fish, where will they live?</strong>
-      <span class="post-arrow">↗</span>
-    </a>
-
-    <a
-      href="https://substack.com/home/post/p-166808166"
-      class="post-row"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <span>02</span>
-      <strong>› the poetry and science behind neuroplasticity</strong>
-      <span class="post-arrow">↗</span>
-    </a>
-
-    <a
-      href="https://substack.com/home/post/p-221192148"
-      class="post-row"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <span>03</span>
-      <strong>› nobody will ever fully understand you. that’s the best news you’ll read this year.</strong>
-      <span class="post-arrow">↗</span>
-    </a>
-
-  </section>
-
-  <!-- CERTIFICATIONS -->
-
-  <section class="card certifications-card">
-
-    <div class="card-heading">
-      <span>~/certifications</span>
-    </div>
-
-    <div class="cert-list">
-      <span>Data Analytics</span>
-      <span>Machine Learning</span>
-      <span>IoT Application Development</span>
-      <span>UI / UX Design</span>
-    </div>
-
-  </section>
-
-  <!-- GITHUB LIVE ACTIVITY -->
-
-  <section class="card github-card">
-
-    <div class="card-heading">
-
-      <span>~/github.activity</span>
-
-      <a
-        href="https://github.com/arya-prasanth"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        ↗
-      </a>
-
-    </div>
-
-    <div class="github-status-row">
-      <span class="live">●</span>
-      <span id="github-status">connecting to GitHub …</span>
-    </div>
-
-    <p id="github-summary" class="muted">
-      loading recent public activity …
-    </p>
-
-    <div id="github-activity-list"></div>
-
-    <div class="github-controls">
-
-      <button id="github-less" type="button" hidden>
-        show less
-      </button>
-
-      <button id="github-more" type="button" hidden>
-        show more
-      </button>
-
-    </div>
-
-  </section>
-
-  <!-- VISITORS -->
-<section class="card visitors-card">
-
-  <div class="card-heading">
-    <span>~/visitors</span>
-    <span class="live">● tracking</span>
-  </div>
-
-  <div class="visitor-number">
-    <span>—</span>
-    <small>page views</small>
-  </div>
-
-  <div class="visitor-map">
-    <div class="map-grid"></div>
-    <span class="map-label">VERCEL ANALYTICS</span>
-  </div>
-
-  <small class="visitor-info">
-    🌏︎ · analytics enabled
-  </small>
-
-</section>
-`
 
 /* =========================================================
-   FIND ME ELSEWHERE
+   GITHUB
 ========================================================= */
-
-const socialCard = document.createElement('section')
-
-socialCard.className = 'social-card'
-socialCard.id = 'gallery'
-
-socialCard.innerHTML = `
-
-  <div class="card-heading">
-    <span>//find me elsewhere</span>
-  </div>
-
-  <div class="social-content">
-
-    <p class="social-text">
-      always open to interesting conversations, collaborations & random internet rabbit holes :)
-    </p>
-
-    <div class="social-links">
-
-      <a
-        href="https://github.com/arya-prasanth"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="GitHub"
-        title="GitHub"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2.16c-3.2.7-3.88-1.54-3.88-1.54-.53-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.67 1.24 3.32.95.1-.74.4-1.24.73-1.52-2.55-.29-5.23-1.28-5.23-5.68 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.45.11-3.03 0 0 .96-.31 3.15 1.17a10.9 10.9 0 0 1 5.74 0c2.19-1.48 3.15-1.17 3.15-1.17.62 1.58.23 2.74.11 3.03.73.8 1.18 1.82 1.18 3.07 0 4.41-2.69 5.38-5.25 5.67.41.35.78 1.04.78 2.1v3.11c0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
-        </svg>
-      </a>
-
-      <a
-        href="https://www.linkedin.com/in/arya-prasanth/"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="LinkedIn"
-        title="LinkedIn"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29ZM5.32 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14ZM3.54 20.45H7.1V9H3.54v11.45Z"/>
-        </svg>
-      </a>
-
-      <a
-        href="https://open.spotify.com/user/snmtm82rsdg0jo7z8nnj32623"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Spotify"
-        title="Spotify"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 1.5A10.5 10.5 0 1 0 12 22.5 10.5 10.5 0 0 0 12 1.5Zm4.81 15.16a.66.66 0 0 1-.91.22c-2.5-1.53-5.65-1.87-9.36-1.02a.66.66 0 1 1-.3-1.29c4.06-.93 7.54-.54 10.35 1.18.31.19.41.6.22.91Zm1.3-2.9a.82.82 0 0 1-1.13.27c-2.86-1.76-7.22-2.27-10.61-1.24a.82.82 0 1 1-.48-1.57c3.87-1.17 8.69-.6 11.95 1.4.39.24.51.74.27 1.14Zm.11-3.03C14.79 8.67 9.12 8.5 5.78 9.51a.98.98 0 1 1-.57-1.87c3.84-1.17 10.24-.94 14.06 1.33a.98.98 0 0 1-1.05 1.66Z"/>
-        </svg>
-      </a>
-
-      <a
-        href="https://boxd.it/iuv0p"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Letterboxd"
-        title="Letterboxd"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" class="social-logo letterboxd-logo">
-          <circle cx="7" cy="12" r="5.25"/>
-          <circle cx="12" cy="12" r="5.25"/>
-          <circle cx="17" cy="12" r="5.25"/>
-        </svg>
-      </a>
-
-      <a
-        href="https://www.instagram.com/a_ry.x/"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Instagram"
-        title="Instagram"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm5.25-3.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
-        </svg>
-      </a>
-
-      <a
-        href="mailto:aryaprasanth.official@gmail.com"
-        aria-label="Email"
-        title="Email"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M2 5.5A2.5 2.5 0 0 1 4.5 3h15A2.5 2.5 0 0 1 22 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18.5v-13Zm2.5-.5a.5.5 0 0 0-.31.89l7.49 5.82a.5.5 0 0 0 .64 0l7.49-5.82A.5.5 0 0 0 19.5 5h-15ZM20 7.02l-6.46 5.02a2.5 2.5 0 0 1-3.08 0L4 7.02v11.48c0 .28.22.5.5.5h15a.5.5 0 0 0 .5-.5V7.02Z"/>
-        </svg>
-      </a>
-
-    </div>
-
-  </div>
-`
-
-document.body.appendChild(socialCard)
 
 /* =========================================================
-   FOOTER
+   GITHUB ACTIVITY
 ========================================================= */
 
-const footer = document.createElement('footer')
+.github-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-footer.innerHTML = `
+.github-terminal {
+  margin: 11px 14px 6px;
+  padding: 7px 10px;
 
-  <span>
-    ● connected ·
-    <span id="india-time">--:--:--</span>
-  </span>
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
-  <span>
-    built ·
-    <span id="built-date"></span>
-  </span>
+  border: 1px solid
+    rgba(110, 190, 116, 0.09);
 
-`
+  border-radius: 4px;
 
-document.body.appendChild(footer)
+  background: rgba(0, 0, 0, 0.16);
 
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.github-terminal > span:first-child {
+  color: var(--green);
+}
+
+#github-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* SUMMARY */
+
+.github-summary {
+  margin: 0;
+  padding: 0 14px;
+
+  color: var(--text-muted);
+
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* ACTIVITY LIST */
+
+.github-activity-list {
+  flex: 1;
+  min-height: 0;
+
+  padding: 4px 14px 6px;
+}
+
+.github-event {
+  padding: 8px 0;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  border-bottom: 1px solid
+    rgba(110, 190, 116, 0.06);
+
+  color: var(--text-soft);
+
+  font-size: 10px;
+  line-height: 1.5;
+
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.github-event:last-child {
+  border-bottom: 0;
+}
+
+.github-event > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.github-event small {
+  flex-shrink: 0;
+
+  color: var(--text-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+/* EVENT LINKS */
+
+.github-event a {
+  color: var(--text-soft);
+  text-decoration: none;
+
+  transition: color 160ms ease;
+}
+
+.github-event a:hover {
+  color: var(--green);
+}
+
+/* CONTROLS */
+
+.github-controls {
+  margin-top: auto;
+
+  padding: 6px 14px 10px;
+
+  display: flex;
+  gap: 6px;
+}
+
+.github-controls button {
+  padding: 5px 10px;
+
+  border: 1px solid
+    rgba(110, 190, 116, 0.13);
+
+  border-radius: 4px;
+
+  background: transparent;
+
+  color: var(--text-muted);
+
+  font-family: inherit;
+  font-size: 9px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.github-controls button:hover:not(:disabled) {
+  border-color:
+    rgba(145, 255, 145, 0.3);
+
+  background: rgba(110, 190, 116, 0.04);
+
+  color: var(--green);
+}
+
+.github-controls button:disabled {
+  cursor: default;
+  opacity: 0.25;
+}
+
+/* LOADING / ERROR STATES */
+
+.github-loading,
+.github-error,
+.github-empty {
+  padding: 12px 0;
+
+  color: var(--text-muted);
+
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.github-error {
+  color: #d98b8b;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 480px) {
+
+  .github-event {
+    gap: 8px;
+    font-size: 9px;
+  }
+
+  .github-event small {
+    font-size: 8px;
+  }
+
+  .github-terminal {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+
+  .github-summary {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .github-activity-list {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .github-controls {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+}
 /* =========================================================
-   INDIA TIME
+   VISITORS
 ========================================================= */
 
-const indiaTime = document.querySelector<HTMLElement>('#india-time')
+.visitors-card {
+  display: flex;
 
-const updateTime = () => {
-  if (!indiaTime) return
-
-  const time = new Intl.DateTimeFormat('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(new Date())
-
-  indiaTime.textContent = `IST ${time}`
+  flex-direction: column;
 }
 
-updateTime()
-window.setInterval(updateTime, 1000)
+.visitor-number {
+  padding:
+    12px
+    14px
+    6px;
 
-/* =========================================================
-   BUILT DATE
-========================================================= */
+  display: flex;
 
-const builtDate = document.querySelector<HTMLElement>('#built-date')
+  align-items: baseline;
 
-if (builtDate) {
-  builtDate.textContent = new Intl.DateTimeFormat('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'Asia/Kolkata',
-  }).format(new Date())
+  gap: 7px;
 }
 
-/* =========================================================
-   HEART / SECRET LETTER
-========================================================= */
+.visitor-number > span {
+  color: var(--green-bright);
 
-const heartTrigger =
-  document.querySelector<HTMLButtonElement>('#heart-trigger')
+  font-size: 28px;
 
-const heartLetter =
-  document.querySelector<HTMLElement>('#heart-letter')
+  line-height: 1;
 
-const letterClose =
-  document.querySelector<HTMLButtonElement>('#letter-close')
-
-const openLetter = () => {
-  heartTrigger?.setAttribute('aria-expanded', 'true')
-  heartLetter?.setAttribute('aria-hidden', 'false')
-  heartLetter?.classList.add('open')
-  document.body.classList.add('letter-open')
+  letter-spacing: -0.06em;
 }
 
-const closeLetter = () => {
-  heartTrigger?.setAttribute('aria-expanded', 'false')
-  heartLetter?.setAttribute('aria-hidden', 'true')
-  heartLetter?.classList.remove('open')
-  document.body.classList.remove('letter-open')
+.visitor-number small {
+  color: var(--text-muted);
+
+  font-size: 9px;
 }
 
-heartTrigger?.addEventListener('click', openLetter)
-letterClose?.addEventListener('click', closeLetter)
+.live {
+  color: var(--green);
 
-heartLetter?.addEventListener('click', event => {
-  if (event.target === heartLetter) {
-    closeLetter()
+  font-size: 9px;
+}
+
+.visitor-map {
+  flex: 1;
+
+  min-height: 80px;
+
+  margin:
+    6px
+    14px
+    8px;
+
+  position: relative;
+
+  overflow: hidden;
+
+  border: 1px solid
+    rgba(110, 190, 116, 0.09);
+
+  background:
+    rgba(20, 60, 25, 0.035);
+}
+
+.map-grid {
+  position: absolute;
+
+  inset: 0;
+
+  opacity: 0.28;
+
+  background-image:
+    linear-gradient(
+      rgba(110, 190, 116, 0.08)
+      1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(110, 190, 116, 0.08)
+      1px,
+      transparent 1px
+    );
+
+  background-size:
+    16px 16px;
+}
+
+.map-dot {
+  width: 4px;
+  height: 4px;
+
+  position: absolute;
+
+  border-radius: 50%;
+
+  background: var(--green);
+
+  box-shadow:
+    0 0 9px
+    rgba(140, 255, 140, 0.65);
+
+  animation:
+    pulse-dot 2s infinite;
+}
+
+.d1 {
+  left: 24%;
+  top: 37%;
+}
+
+.d2 {
+  left: 45%;
+  top: 55%;
+
+  animation-delay: 0.4s;
+}
+
+.d3 {
+  left: 63%;
+  top: 32%;
+
+  animation-delay: 0.8s;
+}
+
+.d4 {
+  left: 72%;
+  top: 65%;
+
+  animation-delay: 1.2s;
+}
+
+.d5 {
+  left: 35%;
+  top: 73%;
+
+  animation-delay: 1.6s;
+}
+
+.map-label {
+  position: absolute;
+
+  right: 7px;
+  bottom: 6px;
+
+  color: var(--text-muted);
+
+  font-size: 8px;
+
+  letter-spacing: 0.1em;
+}
+
+.visitor-info {
+  display: block;
+
+  padding:
+    0
+    14px
+    11px;
+
+  color: var(--text-muted);
+
+  font-size: 9px;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.4;
+
+    transform: scale(0.8);
   }
-})
 
-document.addEventListener('keydown', event => {
-  if (
-    event.key === 'Escape' &&
-    heartLetter?.classList.contains('open')
-  ) {
-    closeLetter()
-  }
-})
+  50% {
+    opacity: 1;
 
-/* =========================================================
-   XP INTERACTION
-========================================================= */
-
-const xpCard =
-  document.querySelector<HTMLButtonElement>('#xp-card')
-
-const xpExpanded =
-  document.querySelector<HTMLElement>('#xp-expanded')
-
-xpCard?.addEventListener('click', () => {
-  const expanded =
-    xpCard.getAttribute('aria-expanded') === 'true'
-
-  xpCard.setAttribute('aria-expanded', String(!expanded))
-  xpExpanded?.setAttribute('aria-hidden', String(expanded))
-  xpExpanded?.classList.toggle('open', !expanded)
-})
-
-/* =========================================================
-   GITHUB LIVE ACTIVITY
-========================================================= */
-
-interface GitHubEvent {
-  id: string
-  type: string
-  created_at: string
-  repo: {
-    name: string
-  }
-  payload: {
-    size?: number
-    ref_type?: string
-    action?: string
-    commits?: Array<{
-      message?: string
-    }>
-    pull_request?: {
-      title?: string
-    }
-    issue?: {
-      title?: string
-    }
-    release?: {
-      name?: string
-      tag_name?: string
-    }
-  }
-}
-
-const GITHUB_USERNAME = 'arya-prasanth'
-
-const githubStatus =
-  document.querySelector<HTMLElement>('#github-status')
-
-const githubSummary =
-  document.querySelector<HTMLElement>('#github-summary')
-
-const githubList =
-  document.querySelector<HTMLElement>('#github-activity-list')
-
-const githubLess =
-  document.querySelector<HTMLButtonElement>('#github-less')
-
-const githubMore =
-  document.querySelector<HTMLButtonElement>('#github-more')
-
-let githubEvents: GitHubEvent[] = []
-let visibleEvents = 5
-
-/* TIME FORMAT */
-
-function githubTime(date: string): string {
-  const timestamp = new Date(date).getTime()
-
-  if (Number.isNaN(timestamp)) {
-    return 'recently'
-  }
-
-  const seconds = Math.max(
-    0,
-    Math.floor((Date.now() - timestamp) / 1000),
-  )
-
-  if (seconds < 60) return 'just now'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`
-
-  return new Date(date).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-  })
-}
-
-/* EVENT DESCRIPTION */
-
-function githubEventText(event: GitHubEvent): string {
-  const repo = event.repo.name.split('/').pop() || event.repo.name
-
-  switch (event.type) {
-    case 'PushEvent': {
-      const count = event.payload.size || 1
-      const commit = event.payload.commits?.[0]?.message
-
-      return `pushed ${count} commit${count > 1 ? 's' : ''} to ${repo}${commit ? ` · ${commit}` : ''}`
-    }
-
-    case 'CreateEvent':
-      return `created ${event.payload.ref_type || 'something'} in ${repo}`
-
-    case 'DeleteEvent':
-      return `deleted ${event.payload.ref_type || 'something'} in ${repo}`
-
-    case 'PullRequestEvent':
-      return `${event.payload.action || 'updated'} a pull request in ${repo}`
-
-    case 'IssuesEvent':
-      return `${event.payload.action || 'updated'} an issue in ${repo}`
-
-    case 'WatchEvent':
-      return `starred ${repo}`
-
-    case 'ForkEvent':
-      return `forked ${repo}`
-
-    case 'ReleaseEvent':
-      return `published a release in ${repo}`
-
-    case 'IssueCommentEvent':
-      return `commented on an issue in ${repo}`
-
-    default:
-      return `activity in ${repo}`
+    transform: scale(1.5);
   }
 }
 
-/* RENDER ACTIVITY */
-
-function renderGithubActivity(): void {
-  if (!githubList || !githubMore || !githubLess) return
-
-  githubList.replaceChildren()
-
-  const displayed = githubEvents.slice(0, visibleEvents)
-
-  displayed.forEach(event => {
-    const row = document.createElement('div')
-    row.className = 'github-activity-item'
-
-    const dot = document.createElement('span')
-    dot.className = 'github-activity-dot'
-    dot.textContent = '●'
-
-    const content = document.createElement('div')
-    content.className = 'github-activity-content'
-
-    const description = document.createElement('p')
-    description.textContent = githubEventText(event)
-
-    const meta = document.createElement('span')
-    meta.className = 'github-activity-meta'
-    meta.textContent = githubTime(event.created_at)
-
-    const link = document.createElement('a')
-    link.href = `https://github.com/${event.repo.name}`
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    link.textContent = event.repo.name
-
-    content.append(description, link, meta)
-    row.append(dot, content)
-
-    githubList.appendChild(row)
-  })
-
-  githubLess.hidden = visibleEvents <= 5
-  githubMore.hidden = visibleEvents >= githubEvents.length
-}
-
-/* FETCH LIVE ACTIVITY */
-
-async function fetchGithubActivity(): Promise<void> {
-  if (githubStatus) {
-    githubStatus.textContent = 'fetching activity …'
-  }
-
-  try {
-    const response = await fetch(
-      `https://api.github.com/users/${GITHUB_USERNAME}/events/public?per_page=100`,
-      {
-        headers: {
-          Accept: 'application/vnd.github+json',
-        },
-        cache: 'no-store',
-      },
-    )
-
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`)
-    }
-
-    const data: GitHubEvent[] = await response.json()
-
-    githubEvents = data
-    visibleEvents = 5
-
-    if (githubStatus) {
-      githubStatus.textContent = 'connection established ✓'
-    }
-
-    if (githubSummary) {
-      githubSummary.textContent =
-        `${data.length} recent public events · @${GITHUB_USERNAME}`
-    }
-
-    if (data.length === 0 && githubList) {
-      githubList.textContent = 'No recent public activity found.'
-    }
-
-    renderGithubActivity()
-  } catch (error) {
-    console.error('GitHub activity error:', error)
-
-    if (githubStatus) {
-      githubStatus.textContent = 'connection failed ✕'
-    }
-
-    if (githubSummary) {
-      githubSummary.textContent =
-        'Unable to fetch GitHub activity. Try again later.'
-    }
-
-    if (githubList) {
-      githubList.textContent = ''
-    }
-  }
-}
-
-/* MORE / LESS */
-
-githubMore?.addEventListener('click', () => {
-  visibleEvents += 5
-  renderGithubActivity()
-})
-
-githubLess?.addEventListener('click', () => {
-  visibleEvents = Math.max(5, visibleEvents - 5)
-  renderGithubActivity()
-})
-
-fetchGithubActivity()
-
-window.setInterval(fetchGithubActivity, 5 * 60 * 1000)
 
 /* =========================================================
    BUY ME A COFFEE
 ========================================================= */
 
-const coffeeCard = document.createElement('section')
+.coffee-card {
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
 
-coffeeCard.className = 'coffee-card'
+.coffee-card > .card-heading {
+  margin: -13px -13px 13px;
+  min-height: 42px;
+  padding: 11px 14px 9px;
+}
 
-coffeeCard.innerHTML = `
-  <div class="card-heading">
-    <span>~/support</span>
-  </div>
+.coffee-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
 
-  <div class="coffee-heading">
-    <span class="coffee-eyebrow">
-      a little support goes a long way
-    </span>
+.coffee-card h3 {
+  margin: 0 9px 0;
+  color: var(--green-bright);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+}
 
-    <h2>buy me a coffee ☕︎</h2>
-  </div>
+.coffee-content {
+  width: calc(100% + 12px);
+  min-height: 80px;
+  padding: 9px 12px;
+  margin-left: -6px;
 
-  <a
-    href="https://buymeacoffee.com/a.ryaahhh"
-    class="coffee-content"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="Buy me a coffee"
-  >
-    <span class="coffee-icon">♥</span>
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
 
-    <span class="coffee-text">
-      <span>support my work and late night builds :)</span>
-    </span>
+  border: 1px solid rgba(145, 255, 145, 0.15);
+  border-radius: 6px;
+  background: rgba(70, 150, 75, 0.035);
 
-    <span class="coffee-arrow">↗</span>
-  </a>
-`
+  text-decoration: none;
 
-const bentoGrid =
-  document.querySelector<HTMLElement>('.bento-grid')
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
 
-if (bentoGrid) {
-  bentoGrid.appendChild(coffeeCard)
+.coffee-content:hover {
+  border-color: rgba(145, 255, 145, 0.36);
+  background: rgba(70, 150, 75, 0.07);
+  transform: translateY(-1px);
+}
+
+.coffee-icon {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(0, 255, 102, 0.25);
+  border-radius: 5px;
+  background: rgba(0, 255, 102, 0.06);
+
+  color: #00ff66;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 19px;
+  font-weight: bold;
+
+  transition: all 160ms ease;
+}
+
+.coffee-content:hover .coffee-icon {
+  border-color: rgba(0, 255, 102, 0.55);
+  background: rgba(0, 255, 102, 0.12);
+  transform: scale(1.08);
+}
+
+.coffee-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.coffee-text strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.coffee-text span {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.coffee-arrow {
+  color: var(--green);
+  font-size: 14px;
+  text-align: right;
+  transition: transform 160ms ease;
+}
+
+.coffee-content:hover .coffee-arrow {
+  transform: translate(2px, -2px);
 }
 /* =========================================================
-   SMOOTH NAVIGATION
+   FIND ME ELSEWHERE
 ========================================================= */
 
-document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach(link => {
-  link.addEventListener('click', event => {
-    const targetId = link.getAttribute('href')
+.social-card {
+  width: min(
+    calc(100% - 40px),
+    1280px
+  );
 
-    if (!targetId || targetId === '#') {
-      return
-    }
+  margin:
+    0
+    auto
+    10px;
+}
 
-    const target = document.querySelector(targetId)
+.social-content {
+  padding:
+    15px
+    18px;
 
-    if (!target) return
+  display: flex;
 
-    event.preventDefault()
+  align-items: center;
 
-    target.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
+  justify-content: space-between;
 
-    if (link.closest('.main-nav')) {
-      document.querySelectorAll('.main-nav a').forEach(nav => {
-        nav.classList.remove('active')
-      })
+  gap: 24px;
+}
 
-      link.classList.add('active')
-    }
-  })
-})
-// Vercel Web Analytics
-inject()
+.social-text {
+  min-width: 0;
+
+  max-width: 650px;
+
+  margin: 0;
+
+  color: var(--text-muted);
+
+  font-size: 12px;
+
+  line-height: 1.7;
+}
+
+.social-links {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  flex-shrink: 0;
+}
+
+.social-links a {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: 1px solid
+    rgba(110, 190, 116, 0.13);
+
+  border-radius: 5px;
+
+  background:
+    rgba(50, 120, 55, 0.025);
+
+  color: var(--text-muted);
+
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.social-links a:hover {
+  color: var(--green-bright);
+
+  border-color:
+    rgba(145, 255, 145, 0.3);
+
+  background:
+    rgba(70, 150, 75, 0.065);
+
+  transform:
+    translateY(-1px);
+}
+
+.social-links svg {
+  width: 15px;
+  height: 15px;
+
+  display: block;
+
+  fill: currentColor;
+}
+
+
+/* =========================================================
+   LETTERBOXD
+========================================================= */
+
+.social-links .letterboxd-logo {
+  width: 17px;
+  height: 17px;
+
+  display: block;
+
+  overflow: visible;
+
+  color: var(--text-muted);
+
+  filter: none;
+
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.social-links a:hover .letterboxd-logo {
+  color: var(--green);
+
+  filter: none;
+
+  transform: translateY(-1px);
+}
+
+.social-links .letterboxd-logo circle {
+  fill: currentColor;
+
+  stroke: none;
+}
+
+.social-links .letterboxd-logo path,
+.social-links .letterboxd-logo rect {
+  fill: currentColor;
+
+  stroke: none;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+footer {
+  width: min(
+    calc(100% - 40px),
+    1280px
+  );
+
+  margin:
+    0
+    auto;
+
+  padding:
+    12px
+    0
+    22px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  color: var(--text-muted);
+
+  font-size: 9px;
+}
+
+footer span {
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   SELECTION
+========================================================= */
+
+::selection {
+  color: #021004;
+
+  background: var(--green);
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020402;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+
+  background:
+    rgba(100, 180, 105, 0.22);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background:
+    rgba(120, 220, 125, 0.38);
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1050px) {
+
+  .site-header {
+    width: min(
+      calc(100% - 32px),
+      1000px
+    );
+  }
+
+  .bento-grid {
+    width: min(
+      calc(100% - 32px),
+      1000px
+    );
+
+    grid-template-columns:
+      repeat(6, minmax(0, 1fr));
+
+    grid-template-rows: auto;
+
+    grid-template-areas:
+      "whoami whoami whoami data data data"
+      "whoami whoami whoami data data data"
+      "spotify spotify likes likes toolkit toolkit"
+      "posts posts posts posts posts posts"
+      "journey journey journey certs certs certs"
+      "journey journey journey projects projects projects"
+      "github github github github github github"
+      "coffee coffee coffee visitors visitors visitors";
+  }
+
+  .whoami-body {
+    min-height: 250px;
+
+    grid-template-columns:
+      120px minmax(0, 1fr);
+
+    gap: 18px;
+
+    padding: 17px;
+  }
+
+  .profile-image {
+    width: 104px;
+    height: 104px;
+  }
+
+  .whoami-text p {
+    font-size: 13px;
+  }
+
+  .data-body,
+  .spotify-body {
+    min-height: 250px;
+  }
+
+  .social-card {
+    width: min(
+      calc(100% - 32px),
+      1000px
+    );
+  }
+
+  footer {
+    width: min(
+      calc(100% - 32px),
+      1000px
+    );
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 720px) {
+
+  body {
+    font-size: 13px;
+  }
+
+  #matrixCanvas {
+    opacity: 0.58;
+  }
+
+  .site-header {
+    width: min(
+      calc(100% - 26px),
+      1380px
+    );
+
+    padding:
+      18px
+      0
+      15px;
+  }
+
+  .brand {
+    font-size: 13px;
+  }
+
+  .main-nav {
+    gap: 14px;
+  }
+
+  .main-nav a {
+    font-size: 10px;
+  }
+
+  .bento-grid {
+    width: min(
+      calc(100% - 26px),
+      1380px
+    );
+
+    display: grid;
+
+    grid-template-columns: 1fr;
+
+    grid-template-rows: auto;
+
+    grid-template-areas:
+      "whoami"
+      "data"
+      "spotify"
+      "likes"
+      "toolkit"
+      "posts"
+      "journey"
+      "certs"
+      "projects"
+      "github"
+      "coffee"
+      "visitors";
+
+    gap: 8px;
+  }
+
+  .card,
+  .whoami-card,
+  .data-card,
+  .spotify-card,
+  .likes-card,
+  .toolkit-card,
+  .journey-card,
+  .projects-card,
+  .posts-card,
+  .certifications-card,
+  .github-card,
+  .visitors-card,
+  .coffee-card {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .whoami-body {
+    height: auto;
+
+    min-height: 0;
+
+    padding: 19px;
+
+    grid-template-columns: 1fr;
+
+    gap: 17px;
+
+    text-align: center;
+  }
+
+  .profile-area {
+    gap: 8px;
+  }
+
+  .profile-image {
+    width: 112px;
+    height: 112px;
+  }
+
+  .whoami-text {
+    max-width: none;
+
+    padding-right: 0;
+  }
+
+  .whoami-text p {
+    font-size: 12px;
+  }
+
+  .identity-row {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 6px;
+  }
+
+  .identity-row div {
+    min-height: 48px;
+  }
+
+  .data-body {
+    height: auto;
+
+    min-height: 220px;
+
+    padding: 18px;
+  }
+
+  .spotify-body {
+    height: auto;
+
+    min-height: 220px;
+
+    padding: 15px;
+  }
+
+  .big-line {
+    font-size: 28px;
+  }
+
+  .muted {
+    font-size: 11px;
+  }
+
+  .likes-list {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .toolkit-list {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    grid-auto-rows: 40px;
+
+    min-height: 200px;
+  }
+
+  .cert-list {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    grid-auto-rows: 40px;
+
+    min-height: 180px;
+  }
+
+  .journey-item {
+    min-height: 115px;
+  }
+
+  .journey-item p {
+    font-size: 11px;
+  }
+
+  .project-row,
+  .post-row {
+    min-height: 51px;
+  }
+
+  .github-card {
+    min-height: 250px;
+  }
+
+  .visitors-card {
+    min-height: 250px;
+  }
+
+  .social-card {
+    width: min(
+      calc(100% - 26px),
+      1380px
+    );
+  }
+
+  .social-content {
+    padding: 15px;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 14px;
+  }
+
+  .social-text {
+    font-size: 11px;
+  }
+
+  .social-links {
+    width: 100%;
+
+    flex-wrap: wrap;
+  }
+
+  .social-links a {
+    width: 34px;
+    height: 34px;
+  }
+
+  .coffee-card {
+    padding: 14px;
+  }
+
+  .coffee-card > .card-heading {
+    margin:
+      -14px
+      -14px
+      14px;
+  }
+
+  footer {
+    width: min(
+      calc(100% - 26px),
+      1380px
+    );
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 6px;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 430px) {
+
+  .site-header {
+    align-items: flex-start;
+  }
+
+  .main-nav {
+    gap: 9px;
+  }
+
+  .main-nav a:nth-child(3),
+  .main-nav a:nth-child(4) {
+    display: none;
+  }
+
+  .card-heading {
+    min-height: 40px;
+
+    padding:
+      11px
+      13px
+      9px;
+  }
+
+  .whoami-body {
+    padding: 17px;
+  }
+
+  .profile-image {
+    width: 105px;
+    height: 105px;
+  }
+
+  .data-body,
+  .spotify-body {
+    padding: 15px;
+  }
+
+  .big-line {
+    font-size: 26px;
+  }
+
+  .post-row {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 4px;
+  }
+
+  .post-row span {
+    min-width: 0;
+  }
+
+  .journey-top {
+    flex-direction: column;
+
+    gap: 4px;
+  }
+
+  .identity-row {
+    grid-template-columns: 1fr;
+  }
+
+  .toolkit-list,
+  .cert-list {
+    grid-template-columns: 1fr;
+  }
+
+  .toolkit-list {
+    grid-auto-rows: 40px;
+  }
+
+  .cert-list {
+    grid-auto-rows: auto;
+  }
+
+  .cert-list span {
+    min-height: 42px;
+  }
+
+  .coffee-content {
+    grid-template-columns:
+      30px minmax(0, 1fr) 16px;
+
+    gap: 8px;
+  }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY / REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before {
+    animation-duration: 0.01ms !important;
+
+    animation-iteration-count: 1 !important;
+
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* =========================================================
+   LITTLE HEART UNDER PROFILE
+========================================================= */
+
+.profile-area {
+  position: relative;
+}
+
+.heart-trigger {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+
+  margin: 8px auto 0;
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  color: rgba(120, 255, 135, 0.55);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.25s ease,
+    color 0.25s ease,
+    filter 0.25s ease;
+}
+
+.heart-trigger:hover {
+  color: rgba(160, 255, 170, 0.95);
+
+  transform:
+    translateY(-2px)
+    scale(1.12);
+
+  filter:
+    drop-shadow(
+      0 0 8px
+      rgba(80, 255, 100, 0.5)
+    );
+}
+
+.heart-trigger:active {
+  transform:
+    translateY(0)
+    scale(0.92);
+}
+
+.heart-symbol {
+  display: block;
+
+  font-size: 19px;
+
+  line-height: 1;
+
+  text-shadow:
+    0 0 6px
+    rgba(80, 255, 100, 0.25);
+}
+
+
+/* =========================================================
+   LETTER OVERLAY
+========================================================= */
+
+.heart-letter {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9999;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 24px;
+
+  background:
+    rgba(0, 5, 2, 0.72);
+
+  backdrop-filter:
+    blur(8px);
+
+  -webkit-backdrop-filter:
+    blur(8px);
+
+  opacity: 0;
+
+  visibility: hidden;
+
+  pointer-events: none;
+
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+}
+
+.heart-letter.open {
+  opacity: 1;
+
+  visibility: visible;
+
+  pointer-events: auto;
+}
+
+
+/* =========================================================
+   LETTER PAPER
+========================================================= */
+
+.letter-paper {
+  position: relative;
+
+  width: min(
+    440px,
+    calc(100vw - 48px)
+  );
+
+  padding:
+    38px
+    34px
+    34px;
+
+  background:
+    rgba(8, 20, 11, 0.97);
+
+  border:
+    1px solid
+    rgba(105, 255, 125, 0.34);
+
+  box-shadow:
+    0 0 0 1px
+      rgba(40, 255, 70, 0.05),
+    0 25px 80px
+      rgba(0, 0, 0, 0.65),
+    0 0 40px
+      rgba(45, 255, 80, 0.08);
+
+  color:
+    rgba(220, 255, 224, 0.88);
+
+  font-family:
+    var(--mono);
+
+  line-height: 1.75;
+
+  transform:
+    translateY(20px)
+    scale(0.94)
+    rotate(-1deg);
+
+  opacity: 0;
+
+  transition:
+    transform 0.4s
+      cubic-bezier(.2,.8,.2,1),
+    opacity 0.3s ease;
+}
+
+.heart-letter.open .letter-paper {
+  transform:
+    translateY(0)
+    scale(1)
+    rotate(0);
+
+  opacity: 1;
+}
+
+
+/* =========================================================
+   LETTER TOP DECORATION
+========================================================= */
+
+.letter-line {
+  margin-bottom: 24px;
+
+  color:
+    rgba(100, 255, 120, 0.25);
+
+  letter-spacing: 4px;
+
+  font-size: 11px;
+}
+
+.letter-greeting {
+  margin-top: 0;
+
+  color:
+    rgba(150, 255, 160, 0.95);
+
+  font-size: 18px;
+}
+
+
+/* =========================================================
+   LETTER TEXT
+========================================================= */
+
+.letter-paper p {
+  margin:
+    0
+    0
+    17px;
+
+  font-size: 14px;
+}
+
+.letter-paper p:not(.letter-greeting) {
+  color:
+    rgba(210, 235, 214, 0.72);
+}
+
+.letter-signoff {
+  margin-top: 28px !important;
+
+  text-align: right;
+
+  color:
+    rgba(130, 255, 145, 0.9) !important;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+========================================================= */
+
+.letter-close {
+  position: absolute;
+
+  top: 12px;
+  right: 15px;
+
+  width: 30px;
+  height: 30px;
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  color:
+    rgba(180, 220, 185, 0.45);
+
+  font-family:
+    inherit;
+
+  font-size: 23px;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.letter-close:hover {
+  color:
+    rgba(190, 255, 195, 0.95);
+
+  transform:
+    rotate(90deg);
+}
+
+
+/* =========================================================
+   BODY WHEN LETTER IS OPEN
+========================================================= */
+
+body.letter-open {
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   HEART PULSE
+========================================================= */
+
+.heart-trigger[aria-expanded="true"] {
+  color:
+    rgba(145, 255, 155, 0.95);
+
+  animation:
+    heartPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes heartPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.12);
+  }
+
+}
+
+
+/* =========================================================
+   HEART / LETTER MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .heart-letter {
+    padding: 16px;
+  }
+
+  .letter-paper {
+    width:
+      calc(100vw - 32px);
+
+    padding:
+      32px
+      24px
+      26px;
+  }
+
+  .letter-paper p {
+    font-size: 13px;
+  }
+
+}
