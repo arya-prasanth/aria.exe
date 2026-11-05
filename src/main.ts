@@ -1,6 +1,7 @@
+import { inject } from '@vercel/analytics'
 import './style.css'
 
-const app = document.querySelector('#app')
+const app = document.querySelector<HTMLElement>('#app')
 
 if (!app) {
   throw new Error('App element not found')
@@ -8,249 +9,98 @@ if (!app) {
 
 /* =========================================================
    MATRIX BACKGROUND
-   Classic Matrix-style falling Katakana
 ========================================================= */
 
 const matrixCanvas = document.createElement('canvas')
-
 matrixCanvas.id = 'matrixCanvas'
-
 document.body.prepend(matrixCanvas)
 
 const ctx = matrixCanvas.getContext('2d')
 
 if (ctx) {
-
-  // Characters similar to the classic Matrix effect
   const characters =
-    'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン0123456789'
+    'アァカサタナハマヤャラワガザダバパパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン0123456789'
 
   const fontSize = 14
-
   let width = window.innerWidth
   let height = window.innerHeight
+  let columns = Math.floor(width / fontSize)
 
-  let columns =
-    Math.floor(width / fontSize)
-
-  // Every column has its own falling position
-  let drops: number[] =
-    Array.from(
-      { length: columns },
-      () => Math.random() * -100,
-    )
-
-
-  /* =======================================================
-     RESIZE
-  ======================================================= */
+  let drops: number[] = Array.from(
+    { length: columns },
+    () => Math.random() * -100,
+  )
 
   const resize = () => {
-
     width = window.innerWidth
     height = window.innerHeight
 
     matrixCanvas.width = width
     matrixCanvas.height = height
+    matrixCanvas.style.width = `${width}px`
+    matrixCanvas.style.height = `${height}px`
 
-    matrixCanvas.style.width =
-      `${width}px`
+    columns = Math.floor(width / fontSize)
 
-    matrixCanvas.style.height =
-      `${height}px`
-
-    columns =
-      Math.floor(width / fontSize)
-
-    drops =
-      Array.from(
-        { length: columns },
-        () => Math.random() * -100,
-      )
-
-    // Clear canvas after resizing
-    ctx.clearRect(
-      0,
-      0,
-      width,
-      height,
+    drops = Array.from(
+      { length: columns },
+      () => Math.random() * -100,
     )
+
+    ctx.clearRect(0, 0, width, height)
   }
 
-
-  /* =======================================================
-     DRAW MATRIX
-  ======================================================= */
-
   const draw = () => {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.055)'
+    ctx.fillRect(0, 0, width, height)
 
-    /*
-     * Black transparent layer.
-     *
-     * This is what creates the fading trail.
-     */
-    ctx.fillStyle =
-      'rgba(0, 0, 0, 0.055)'
+    ctx.font = `${fontSize}px Arial, monospace`
+    ctx.textBaseline = 'top'
 
-    ctx.fillRect(
-      0,
-      0,
-      width,
-      height,
-    )
+    for (let i = 0; i < columns; i++) {
+      const character =
+        characters[Math.floor(Math.random() * characters.length)]
 
-
-    /*
-     * Matrix font
-     */
-    ctx.font =
-      `${fontSize}px Arial, monospace`
-
-    ctx.textBaseline =
-      'top'
-
-
-    /*
-     * Draw every column
-     */
-    for (
-      let i = 0;
-      i < columns;
-      i++
-    ) {
-
-      /*
-       * Pick a random Matrix character
-       */
-      const text =
-        characters[
-          Math.floor(
-            Math.random() *
-            characters.length,
-          )
-        ]
-
-
-      /*
-       * X position of column
-       */
-      const x =
-        i * fontSize
-
-
-      /*
-       * Y position of character
-       */
-      const y =
-        drops[i] * fontSize
-
-
-      /*
-       * Most characters are dark green.
-       */
-      const random =
-        Math.random()
-
+      const x = i * fontSize
+      const y = drops[i] * fontSize
+      const random = Math.random()
 
       if (random > 0.985) {
-
-        /*
-         * Bright leading character
-         */
-        ctx.fillStyle =
-          '#d7ffd7'
-
-        ctx.shadowColor =
-          '#00ff41'
-
+        ctx.fillStyle = '#d7ffd7'
+        ctx.shadowColor = '#00ff41'
         ctx.shadowBlur = 8
-
       } else if (random > 0.92) {
-
-        /*
-         * Medium green
-         */
-        ctx.fillStyle =
-          '#39ff66'
-
-        ctx.shadowColor =
-          '#00ff41'
-
+        ctx.fillStyle = '#39ff66'
+        ctx.shadowColor = '#00ff41'
         ctx.shadowBlur = 4
-
       } else {
-
-        /*
-         * Normal Matrix green
-         */
-        ctx.fillStyle =
-          '#149b35'
-
+        ctx.fillStyle = '#149b35'
         ctx.shadowBlur = 0
       }
 
-
-      /*
-       * Draw character
-       */
-      ctx.fillText(
-        text,
-        x,
-        y,
-      )
-
-
-      /*
-       * Reset glow
-       */
+      ctx.fillText(character, x, y)
       ctx.shadowBlur = 0
 
-
-      /*
-       * Falling speed
-       */
       drops[i] += 0.65
 
-
-      /*
-       * When a stream reaches the bottom,
-       * randomly restart it from above.
-       */
       if (
         drops[i] * fontSize > height &&
         Math.random() > 0.975
       ) {
-
-        drops[i] =
-          Math.random() * -30
-
+        drops[i] = Math.random() * -30
       }
-
     }
 
-
     requestAnimationFrame(draw)
-
   }
 
-
-  /* =======================================================
-     START
-  ======================================================= */
-
   resize()
-
-  window.addEventListener(
-    'resize',
-    resize,
-  )
-
+  window.addEventListener('resize', resize)
   draw()
-
 }
 
 /* =========================================================
-   PAGE
+   PORTFOLIO PAGE
 ========================================================= */
 
 app.innerHTML = `
@@ -259,50 +109,30 @@ app.innerHTML = `
 
   <a href="#home" class="brand">
     <span class="brand-dot">●</span>
-    <span>aria.in</span>
+    <span>aria.exe</span>
   </a>
 
   <nav class="main-nav" aria-label="Main navigation">
-
-    <a href="#home" class="active">
-      home
-    </a>
-
-    <a href="#resume">
-      resume
-    </a>
-
-    <a href="#blog">
-      blog
-    </a>
-
-    <a href="#gallery">
-      gallery
-    </a>
-
+    <a href="#home" class="active">home</a>
+    <a href="#resume">resume</a>
+    <a href="#blog">blog</a>
+    <a href="#gallery">gallery</a>
   </nav>
 
 </header>
 
-
 <main id="home" class="bento-grid">
 
-
-  <!-- =====================================================
-       WHOAMI
-  ====================================================== -->
+  <!-- WHOAMI -->
 
   <section class="card whoami-card">
 
     <div class="card-heading">
-
       <span>~/whoami</span>
-
       <span class="tiny-status">
         <i></i>
         idle
       </span>
-
     </div>
 
     <div class="whoami-body">
@@ -310,22 +140,9 @@ app.innerHTML = `
       <div class="profile-area">
 
         <div class="profile-image">
-
-          <img
-            src="/aria.jpeg"
-            alt="Arya PL"
-          />
-
-          <span class="image-fallback">
-            A
-          </span>
-
+          <img src="/aria.jpeg" alt="Arya PL" />
+          <span class="image-fallback">A</span>
         </div>
-
-
-        <!-- =================================================
-             LITTLE HEART
-        ================================================== -->
 
         <button
           type="button"
@@ -336,11 +153,6 @@ app.innerHTML = `
         >
           <span class="heart-symbol">♥</span>
         </button>
-
-
-        <!-- =================================================
-             LETTER
-        ================================================== -->
 
         <div
           class="heart-letter"
@@ -359,12 +171,10 @@ app.innerHTML = `
               ×
             </button>
 
-            <div class="letter-line">
-        
-            </div>
+            <div class="letter-line"></div>
 
             <p class="letter-greeting">
-              hi, kuttu.
+              hey, kuttu.
             </p>
 
             <p>
@@ -373,10 +183,7 @@ app.innerHTML = `
               for you to find.
             </p>
 
-            <p>
-              keep it safe. ♡
-            </p>
-
+            <p>keep it safe. ♡</p>
 
             <p class="letter-signoff">
               — aria ♡
@@ -388,12 +195,9 @@ app.innerHTML = `
 
       </div>
 
-
       <div class="whoami-text">
 
-        <p class="hello">
-          Hi there!
-        </p>
+        <p class="hello">Hi there!</p>
 
         <p>
           This is <strong>Arya PL</strong>.
@@ -435,10 +239,7 @@ app.innerHTML = `
 
   </section>
 
-
-  <!-- =====================================================
-       DATA
-  ====================================================== -->
+  <!-- DATA -->
 
   <section class="card data-card">
 
@@ -459,21 +260,16 @@ app.innerHTML = `
       </p>
 
       <div class="skill-mini-row">
-
         <span>Python</span>
         <span>SQL</span>
         <span>Excel</span>
-
       </div>
 
     </div>
 
   </section>
 
-
-  <!-- =====================================================
-       SPOTIFY
-  ====================================================== -->
+  <!-- SPOTIFY -->
 
   <section class="card spotify-card">
 
@@ -494,9 +290,7 @@ app.innerHTML = `
 
     <div class="spotify-body">
 
-      <p class="muted">
-        lately listening to
-      </p>
+      <p class="muted">lately listening to</p>
 
       <a
         class="song"
@@ -504,27 +298,15 @@ app.innerHTML = `
         target="_blank"
         rel="noopener noreferrer"
       >
-
-        <span class="song-number">
-          01
-        </span>
+        <span class="song-number">01</span>
 
         <span class="song-info">
-
-          <strong>
-            Baby
-          </strong>
-
-          <small>
-            Justin Bieber
-          </small>
-
+          <strong>Baby</strong>
+          <small>Justin Bieber</small>
         </span>
 
         <span>↗</span>
-
       </a>
-
 
       <a
         class="song"
@@ -532,27 +314,15 @@ app.innerHTML = `
         target="_blank"
         rel="noopener noreferrer"
       >
-
-        <span class="song-number">
-          02
-        </span>
+        <span class="song-number">02</span>
 
         <span class="song-info">
-
-          <strong>
-            Dancing in the Flames
-          </strong>
-
-          <small>
-            Weekend
-          </small>
-
+          <strong>Dancing in the Flames</strong>
+          <small>The Weeknd</small>
         </span>
 
         <span>↗</span>
-
       </a>
-
 
       <a
         class="song"
@@ -560,35 +330,21 @@ app.innerHTML = `
         target="_blank"
         rel="noopener noreferrer"
       >
-
-        <span class="song-number">
-          03
-        </span>
+        <span class="song-number">03</span>
 
         <span class="song-info">
-
-          <strong>
-            There's Nothing Holdin' Me Back
-          </strong>
-
-          <small>
-            Shawn Mendes
-          </small>
-
+          <strong>There's Nothing Holdin' Me Back</strong>
+          <small>Shawn Mendes</small>
         </span>
 
         <span>↗</span>
-
       </a>
 
     </div>
 
   </section>
 
-
-  <!-- =====================================================
-       LIKES
-  ====================================================== -->
+  <!-- LIKES -->
 
   <section class="card likes-card">
 
@@ -597,11 +353,10 @@ app.innerHTML = `
     </div>
 
     <p class="muted">
-      things that keep me alive offline
+      things that keep me alive offline ✧
     </p>
 
     <div class="likes-list">
-
       <span>movies</span>
       <span>series</span>
       <span>anime</span>
@@ -610,72 +365,39 @@ app.innerHTML = `
       <span>cooking</span>
       <span>conspiracy theories</span>
       <span>yapping</span>
-
     </div>
 
-
-    <button
-      type="button"
-      class="xp-inline"
-      id="xp-card"
-      aria-expanded="false"
+    <a
+      href="/dinorun.html"
+      class="xp-game-link"
+      target="_blank"
+      rel="noopener noreferrer"
     >
 
-      <span class="xp-arrow">
-        ❯
-      </span>
+      <div class="xp-game-top">
+        <span>~/side.quest</span>
+      </div>
 
-      <span class="xp-content">
+      <div class="xp-game-content">
 
-        <small>
-          currently in my
-        </small>
+        <span class="xp-game-icon">🦖</span>
 
-        <strong>
-          XP farming arc
-        </strong>
+        <div>
+          <strong>wanna play a game?</strong>
+          <p>i built a little dino game. come try it!</p>
+        </div>
 
-        <span class="xp-description">
-          collecting skills, side quests &
-          questionable ideas
-        </span>
+      </div>
 
-      </span>
+      <div class="xp-game-bottom">
+        <span>PLAY!</span>
+      </div>
 
-      <span class="xp-level">
-
-        <small>
-          LVL
-        </small>
-
-        <strong>
-          67
-        </strong>
-
-      </span>
-
-    </button>
-
-
-    <div
-      class="xp-expanded"
-      id="xp-expanded"
-      aria-hidden="true"
-    >
-
-      <span>▸ learning</span>
-      <span>▸ building</span>
-      <span>▸ experimenting</span>
-      <span>▸ collecting XP</span>
-
-    </div>
+    </a>
 
   </section>
 
-
-  <!-- =====================================================
-       TOOLKIT
-  ====================================================== -->
+  <!-- TOOLKIT -->
 
   <section class="card toolkit-card">
 
@@ -684,7 +406,6 @@ app.innerHTML = `
     </div>
 
     <div class="toolkit-list">
-
       <span>Python</span>
       <span>R</span>
       <span>C++</span>
@@ -695,38 +416,23 @@ app.innerHTML = `
       <span>Figma</span>
       <span>GitHub</span>
       <span>AI Agents</span>
-
     </div>
 
   </section>
 
+  <!-- JOURNEY -->
 
-  <!-- =====================================================
-       JOURNEY
-  ====================================================== -->
-
-  <section
-    class="card journey-card"
-    id="resume"
-  >
+  <section class="card journey-card" id="resume">
 
     <div class="card-heading">
       <span>~/journey</span>
     </div>
 
-
     <article class="journey-item">
 
       <div class="journey-top">
-
-        <strong>
-          MSc Computer Science (Data Analytics)
-        </strong>
-
-        <small>
-          jun'26 — mar'28
-        </small>
-
+        <strong>MSc Computer Science (Data Analytics)</strong>
+        <small>jun'26 — mar'28</small>
       </div>
 
       <a
@@ -744,19 +450,11 @@ app.innerHTML = `
 
     </article>
 
-
     <article class="journey-item">
 
       <div class="journey-top">
-
-        <strong>
-          Process Associate
-        </strong>
-
-        <small>
-          aug'25 — may'26
-        </small>
-
+        <strong>Process Associate</strong>
+        <small>aug'25 — may'26</small>
       </div>
 
       <a
@@ -774,19 +472,11 @@ app.innerHTML = `
 
     </article>
 
-
     <article class="journey-item">
 
       <div class="journey-top">
-
-        <strong>
-          Bachelor of Computer Applications
-        </strong>
-
-        <small>
-          jun'22 — mar'25
-        </small>
-
+        <strong>Bachelor of Computer Applications</strong>
+        <small>jun'22 — mar'25</small>
       </div>
 
       <a
@@ -806,18 +496,13 @@ app.innerHTML = `
 
   </section>
 
-
-  <!-- =====================================================
-       PROJECTS
-  ====================================================== -->
+  <!-- PROJECTS -->
 
   <section class="card projects-card">
 
     <div class="card-heading">
 
-      <span>
-        ~/projects
-      </span>
+      <span>~/projects</span>
 
       <a
         href="https://github.com/arya-prasanth"
@@ -829,7 +514,6 @@ app.innerHTML = `
 
     </div>
 
-
     <a
       class="project-row"
       href="https://github.com/arya-prasanth"
@@ -838,22 +522,14 @@ app.innerHTML = `
     >
 
       <span>
-
-        <strong>
-          TravelMate AI
-        </strong>
-
-        <small>
-          AI travel assistant
-        </small>
-
+        <strong>TravelMate AI</strong>
+        <small>AI travel assistant</small>
       </span>
 
       <span>↗</span>
 
     </a>
 
-
     <a
       class="project-row"
       href="https://github.com/arya-prasanth"
@@ -862,15 +538,8 @@ app.innerHTML = `
     >
 
       <span>
-
-        <strong>
-          UniCredit
-        </strong>
-
-        <small>
-          banking web application
-        </small>
-
+        <strong>UniCredit</strong>
+        <small>banking web application</small>
       </span>
 
       <span>↗</span>
@@ -879,73 +548,60 @@ app.innerHTML = `
 
   </section>
 
+  <!-- SUBSTACK -->
 
-  <!-- =====================================================
-       POSTS
-  ====================================================== -->
-
-  <section
-    class="card posts-card"
-    id="blog"
-  >
+  <section class="card posts-card" id="blog">
 
     <div class="card-heading">
 
-      <span>
-        ~/posts.recent
-      </span>
+      <span>~/words.that.stayed</span>
 
-      <a href="#blog">
-        see all →
+      <a
+        href="https://substack.com/@aryaahhh"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        ↗
       </a>
 
     </div>
 
-
-    <a href="#blog" class="post-row">
-
-      <span>
-        2026·08·01
-      </span>
-
-      <strong>
-        › Starting my Data Analytics journey
-      </strong>
-
+    <a
+      href="https://substack.com/home/post/p-206972357"
+      class="post-row"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span>01</span>
+      <strong>› if a birds falls in love with a fish, where will they live?</strong>
+      <span class="post-arrow">↗</span>
     </a>
 
-
-    <a href="#blog" class="post-row">
-
-      <span>
-        2026·07·20
-      </span>
-
-      <strong>
-        › Building my first dashboard
-      </strong>
-
+    <a
+      href="https://substack.com/home/post/p-166808166"
+      class="post-row"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span>02</span>
+      <strong>› the poetry and science behind neuroplasticity</strong>
+      <span class="post-arrow">↗</span>
     </a>
 
-
-    <a href="#blog" class="post-row">
-
-      <span>
-        2026·07·10
-      </span>
-
-      <strong>
-        › Things I'm learning
-      </strong>
-
+    <a
+      href="https://substack.com/home/post/p-221192148"
+      class="post-row"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span>03</span>
+      <strong>› nobody will ever fully understand you. that’s the best news you’ll read this year.</strong>
+      <span class="post-arrow">↗</span>
     </a>
 
   </section>
 
-
-  <!-- =====================================================
-       CERTIFICATIONS
-  ====================================================== -->
+  <!-- CERTIFICATIONS -->
 
   <section class="card certifications-card">
 
@@ -954,132 +610,76 @@ app.innerHTML = `
     </div>
 
     <div class="cert-list">
-
-      <span>
-        Accounts Receivable Management
-      </span>
-
-      <span>
-        Data Analytics
-      </span>
-
-      <span>
-        Machine Learning
-      </span>
-
-      <span>
-        IoT Application Development
-      </span>
-
-      <span>
-        UI / UX Design
-      </span>
-
+      <span>Data Analytics</span>
+      <span>Machine Learning</span>
+      <span>IoT Application Development</span>
+      <span>UI / UX Design</span>
     </div>
 
   </section>
 
-
-  <!-- =====================================================
-       GITHUB
-  ====================================================== -->
+  <!-- GITHUB LIVE ACTIVITY -->
 
   <section class="card github-card">
 
     <div class="card-heading">
 
-      <span>
-        ~/github.activity
-      </span>
+      <span>~/github.activity</span>
 
       <a
         href="https://github.com/arya-prasanth"
         target="_blank"
         rel="noopener noreferrer"
       >
-        @arya-prasanth ↗
+        ↗
       </a>
 
     </div>
 
-
-    <div class="github-terminal">
-
-      <span>$</span>
-
-      <span id="github-status">
-        activity fetch …
-      </span>
-
+    <div class="github-status-row">
+      <span class="live">●</span>
+      <span id="github-status">connecting to GitHub …</span>
     </div>
 
-
-    <p
-      id="github-summary"
-      class="github-summary"
-    >
-      fetching GitHub activity…
+    <p id="github-summary" class="muted">
+      loading recent public activity …
     </p>
 
-
-    <div
-      id="github-activity-list"
-      class="github-activity-list"
-    ></div>
-
+    <div id="github-activity-list"></div>
 
     <div class="github-controls">
 
-      <button
-        type="button"
-        id="github-less"
-      >
-        less
+      <button id="github-less" type="button" hidden>
+        show less
       </button>
 
-      <button
-        type="button"
-        id="github-more"
-      >
-        more
+      <button id="github-more" type="button" hidden>
+        show more
       </button>
 
     </div>
 
   </section>
 
-
-  <!-- =====================================================
-       VISITORS
-  ====================================================== -->
+  <!-- VISITORS -->
 
   <section class="card visitors-card">
 
     <div class="card-heading">
 
-      <span>
-        ~/visitors
-      </span>
+      <span>~/visitors</span>
 
-      <span class="live">
-        ● live
-      </span>
+      <span class="live">● live</span>
 
     </div>
-
 
     <div class="visitor-number">
 
-      <span id="visitor-count">
-        1,247
-      </span>
+      <span id="visitor-count">1,247</span>
 
-      <small>
-        visitors
-      </small>
+      <small>visitors</small>
 
     </div>
-
 
     <div class="visitor-map">
 
@@ -1091,12 +691,9 @@ app.innerHTML = `
       <span class="map-dot d4"></span>
       <span class="map-dot d5"></span>
 
-      <span class="map-label">
-        LIVE WORLD
-      </span>
+      <span class="map-label">LIVE WORLD</span>
 
     </div>
-
 
     <small class="visitor-info">
       live · analytics connecting
@@ -1111,19 +708,15 @@ app.innerHTML = `
    FIND ME ELSEWHERE
 ========================================================= */
 
-const socialCard =
-  document.createElement('section')
+const socialCard = document.createElement('section')
 
-socialCard.className =
-  'social-card'
-
-socialCard.id =
-  'gallery'
+socialCard.className = 'social-card'
+socialCard.id = 'gallery'
 
 socialCard.innerHTML = `
 
   <div class="card-heading">
-    <span>// FIND ME ELSEWHERE</span>
+    <span>//find me elsewhere</span>
   </div>
 
   <div class="social-content">
@@ -1177,11 +770,7 @@ socialCard.innerHTML = `
         aria-label="Letterboxd"
         title="Letterboxd"
       >
-        <svg
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          class="social-logo letterboxd-logo"
-        >
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="social-logo letterboxd-logo">
           <circle cx="7" cy="12" r="5.25"/>
           <circle cx="12" cy="12" r="5.25"/>
           <circle cx="17" cy="12" r="5.25"/>
@@ -1196,7 +785,7 @@ socialCard.innerHTML = `
         title="Instagram"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0-0-6Zm5.25-3.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
+          <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm5.25-3.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
         </svg>
       </a>
 
@@ -1215,24 +804,19 @@ socialCard.innerHTML = `
   </div>
 `
 
-document.body.appendChild(
-  socialCard,
-)
+document.body.appendChild(socialCard)
 
 /* =========================================================
    FOOTER
 ========================================================= */
 
-const footer =
-  document.createElement('footer')
+const footer = document.createElement('footer')
 
 footer.innerHTML = `
 
   <span>
     ● connected ·
-    <span id="india-time">
-      --:--:--
-    </span>
+    <span id="india-time">--:--:--</span>
   </span>
 
   <span>
@@ -1242,71 +826,44 @@ footer.innerHTML = `
 
 `
 
-document.body.appendChild(
-  footer,
-)
+document.body.appendChild(footer)
 
 /* =========================================================
    INDIA TIME
 ========================================================= */
 
-const indiaTime =
-  document.querySelector(
-    '#india-time',
-  )
+const indiaTime = document.querySelector<HTMLElement>('#india-time')
 
 const updateTime = () => {
-  if (!indiaTime)
-    return
+  if (!indiaTime) return
 
-  const now =
-    new Date()
+  const time = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date())
 
-  const time =
-    new Intl.DateTimeFormat(
-      'en-IN',
-      {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      },
-    ).format(now)
-
-  indiaTime.textContent =
-    `IST ${time}`
+  indiaTime.textContent = `IST ${time}`
 }
 
 updateTime()
-
-window.setInterval(
-  updateTime,
-  1000,
-)
+window.setInterval(updateTime, 1000)
 
 /* =========================================================
    BUILT DATE
 ========================================================= */
 
-const builtDate =
-  document.querySelector(
-    '#built-date',
-  )
+const builtDate = document.querySelector<HTMLElement>('#built-date')
 
 if (builtDate) {
-  builtDate.textContent =
-    new Intl.DateTimeFormat(
-      'en-IN',
-      {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        timeZone: 'Asia/Kolkata',
-      },
-    ).format(
-      new Date(),
-    )
+  builtDate.textContent = new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  }).format(new Date())
 }
 
 /* =========================================================
@@ -1314,613 +871,376 @@ if (builtDate) {
 ========================================================= */
 
 const heartTrigger =
-  document.querySelector(
-    '#heart-trigger',
-  ) as HTMLButtonElement | null
+  document.querySelector<HTMLButtonElement>('#heart-trigger')
 
 const heartLetter =
-  document.querySelector(
-    '#heart-letter',
-  ) as HTMLElement | null
+  document.querySelector<HTMLElement>('#heart-letter')
 
 const letterClose =
-  document.querySelector(
-    '#letter-close',
-  ) as HTMLButtonElement | null
-
+  document.querySelector<HTMLButtonElement>('#letter-close')
 
 const openLetter = () => {
-
-  heartTrigger?.setAttribute(
-    'aria-expanded',
-    'true',
-  )
-
-  heartLetter?.setAttribute(
-    'aria-hidden',
-    'false',
-  )
-
-  heartLetter?.classList.add(
-    'open',
-  )
-
-  document.body.classList.add(
-    'letter-open',
-  )
-
+  heartTrigger?.setAttribute('aria-expanded', 'true')
+  heartLetter?.setAttribute('aria-hidden', 'false')
+  heartLetter?.classList.add('open')
+  document.body.classList.add('letter-open')
 }
-
 
 const closeLetter = () => {
-
-  heartTrigger?.setAttribute(
-    'aria-expanded',
-    'false',
-  )
-
-  heartLetter?.setAttribute(
-    'aria-hidden',
-    'true',
-  )
-
-  heartLetter?.classList.remove(
-    'open',
-  )
-
-  document.body.classList.remove(
-    'letter-open',
-  )
-
+  heartTrigger?.setAttribute('aria-expanded', 'false')
+  heartLetter?.setAttribute('aria-hidden', 'true')
+  heartLetter?.classList.remove('open')
+  document.body.classList.remove('letter-open')
 }
 
+heartTrigger?.addEventListener('click', openLetter)
+letterClose?.addEventListener('click', closeLetter)
 
-heartTrigger?.addEventListener(
-  'click',
-  openLetter,
-)
+heartLetter?.addEventListener('click', event => {
+  if (event.target === heartLetter) {
+    closeLetter()
+  }
+})
 
-
-letterClose?.addEventListener(
-  'click',
-  closeLetter,
-)
-
-
-heartLetter?.addEventListener(
-  'click',
-  event => {
-
-    if (
-      event.target === heartLetter
-    ) {
-      closeLetter()
-    }
-
-  },
-)
-
-
-document.addEventListener(
-  'keydown',
-  event => {
-
-    if (
-      event.key === 'Escape' &&
-      heartLetter?.classList.contains(
-        'open',
-      )
-    ) {
-      closeLetter()
-    }
-
-  },
-)
+document.addEventListener('keydown', event => {
+  if (
+    event.key === 'Escape' &&
+    heartLetter?.classList.contains('open')
+  ) {
+    closeLetter()
+  }
+})
 
 /* =========================================================
    XP INTERACTION
 ========================================================= */
 
 const xpCard =
-  document.querySelector(
-    '#xp-card',
-  ) as HTMLButtonElement | null
+  document.querySelector<HTMLButtonElement>('#xp-card')
 
 const xpExpanded =
-  document.querySelector(
-    '#xp-expanded',
-  ) as HTMLElement | null
+  document.querySelector<HTMLElement>('#xp-expanded')
 
-xpCard?.addEventListener(
-  'click',
-  () => {
+xpCard?.addEventListener('click', () => {
+  const expanded =
+    xpCard.getAttribute('aria-expanded') === 'true'
 
-    const expanded =
-      xpCard.getAttribute(
-        'aria-expanded',
-      ) === 'true'
-
-    xpCard.setAttribute(
-      'aria-expanded',
-      String(!expanded),
-    )
-
-    xpExpanded?.setAttribute(
-      'aria-hidden',
-      String(expanded),
-    )
-
-    xpExpanded?.classList.toggle(
-      'open',
-      !expanded,
-    )
-  },
-)
+  xpCard.setAttribute('aria-expanded', String(!expanded))
+  xpExpanded?.setAttribute('aria-hidden', String(expanded))
+  xpExpanded?.classList.toggle('open', !expanded)
+})
 
 /* =========================================================
-   GITHUB ACTIVITY
+   GITHUB LIVE ACTIVITY
 ========================================================= */
 
 interface GitHubEvent {
-
-  type?: string
-
-  created_at?: string
-
-  repo?: {
-    name?: string
+  id: string
+  type: string
+  created_at: string
+  repo: {
+    name: string
   }
-
-  payload?: {
+  payload: {
+    size?: number
+    ref_type?: string
+    action?: string
     commits?: Array<{
       message?: string
     }>
+    pull_request?: {
+      title?: string
+    }
+    issue?: {
+      title?: string
+    }
+    release?: {
+      name?: string
+      tag_name?: string
+    }
   }
-
 }
 
+const GITHUB_USERNAME = 'arya-prasanth'
 
 const githubStatus =
-  document.querySelector(
-    '#github-status',
-  )
+  document.querySelector<HTMLElement>('#github-status')
 
 const githubSummary =
-  document.querySelector(
-    '#github-summary',
-  )
+  document.querySelector<HTMLElement>('#github-summary')
 
 const githubList =
-  document.querySelector(
-    '#github-activity-list',
-  )
+  document.querySelector<HTMLElement>('#github-activity-list')
 
 const githubLess =
-  document.querySelector(
-    '#github-less',
-  ) as HTMLButtonElement | null
+  document.querySelector<HTMLButtonElement>('#github-less')
 
 const githubMore =
-  document.querySelector(
-    '#github-more',
-  ) as HTMLButtonElement | null
-
+  document.querySelector<HTMLButtonElement>('#github-more')
 
 let githubEvents: GitHubEvent[] = []
+let visibleEvents = 5
 
-let visibleEvents = 3
+/* TIME FORMAT */
 
+function githubTime(date: string): string {
+  const timestamp = new Date(date).getTime()
 
-/* =========================================================
-   GITHUB EVENT LABEL
-========================================================= */
-
-const eventLabel =
-  (
-    event: GitHubEvent,
-  ): string => {
-
-    const repo =
-      event.repo?.name ||
-      'repository'
-
-    switch (event.type) {
-
-      case 'PushEvent':
-        return `push → ${repo}`
-
-      case 'CreateEvent':
-        return `created → ${repo}`
-
-      case 'PullRequestEvent':
-        return `pull request → ${repo}`
-
-      case 'IssuesEvent':
-        return `issue activity → ${repo}`
-
-      case 'IssueCommentEvent':
-        return `comment → ${repo}`
-
-      case 'WatchEvent':
-        return `starred → ${repo}`
-
-      case 'ForkEvent':
-        return `forked → ${repo}`
-
-      default:
-        return `${event.type || 'activity'} → ${repo}`
-
-    }
+  if (Number.isNaN(timestamp)) {
+    return 'recently'
   }
 
+  const seconds = Math.max(
+    0,
+    Math.floor((Date.now() - timestamp) / 1000),
+  )
 
-/* =========================================================
-   RENDER GITHUB
-========================================================= */
+  if (seconds < 60) return 'just now'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`
 
-const renderGithub =
-  () => {
+  return new Date(date).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+  })
+}
 
-    if (!githubList)
-      return
+/* EVENT DESCRIPTION */
 
-    const visible =
-      githubEvents.slice(
-        0,
-        visibleEvents,
-      )
+function githubEventText(event: GitHubEvent): string {
+  const repo = event.repo.name.split('/').pop() || event.repo.name
 
-    githubList.innerHTML =
-      visible
-        .map(
-          event => {
+  switch (event.type) {
+    case 'PushEvent': {
+      const count = event.payload.size || 1
+      const commit = event.payload.commits?.[0]?.message
 
-            const date =
-              event.created_at
-                ? new Intl.DateTimeFormat(
-                    'en-IN',
-                    {
-                      day: '2-digit',
-                      month: 'short',
-                    },
-                  ).format(
-                    new Date(
-                      event.created_at,
-                    ),
-                  )
-                : ''
-
-            return `
-
-              <div class="github-event">
-
-                <span>
-                  ${eventLabel(event)}
-                </span>
-
-                <small>
-                  ${date}
-                </small>
-
-              </div>
-
-            `
-          },
-        )
-        .join('')
-
-
-    if (githubLess) {
-
-      githubLess.disabled =
-        visibleEvents <= 3
-
+      return `pushed ${count} commit${count > 1 ? 's' : ''} to ${repo}${commit ? ` · ${commit}` : ''}`
     }
 
+    case 'CreateEvent':
+      return `created ${event.payload.ref_type || 'something'} in ${repo}`
 
-    if (githubMore) {
+    case 'DeleteEvent':
+      return `deleted ${event.payload.ref_type || 'something'} in ${repo}`
 
-      githubMore.disabled =
-        visibleEvents >=
-        githubEvents.length
+    case 'PullRequestEvent':
+      return `${event.payload.action || 'updated'} a pull request in ${repo}`
 
-    }
+    case 'IssuesEvent':
+      return `${event.payload.action || 'updated'} an issue in ${repo}`
 
+    case 'WatchEvent':
+      return `starred ${repo}`
+
+    case 'ForkEvent':
+      return `forked ${repo}`
+
+    case 'ReleaseEvent':
+      return `published a release in ${repo}`
+
+    case 'IssueCommentEvent':
+      return `commented on an issue in ${repo}`
+
+    default:
+      return `activity in ${repo}`
+  }
+}
+
+/* RENDER ACTIVITY */
+
+function renderGithubActivity(): void {
+  if (!githubList || !githubMore || !githubLess) return
+
+  githubList.replaceChildren()
+
+  const displayed = githubEvents.slice(0, visibleEvents)
+
+  displayed.forEach(event => {
+    const row = document.createElement('div')
+    row.className = 'github-activity-item'
+
+    const dot = document.createElement('span')
+    dot.className = 'github-activity-dot'
+    dot.textContent = '●'
+
+    const content = document.createElement('div')
+    content.className = 'github-activity-content'
+
+    const description = document.createElement('p')
+    description.textContent = githubEventText(event)
+
+    const meta = document.createElement('span')
+    meta.className = 'github-activity-meta'
+    meta.textContent = githubTime(event.created_at)
+
+    const link = document.createElement('a')
+    link.href = `https://github.com/${event.repo.name}`
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.textContent = event.repo.name
+
+    content.append(description, link, meta)
+    row.append(dot, content)
+
+    githubList.appendChild(row)
+  })
+
+  githubLess.hidden = visibleEvents <= 5
+  githubMore.hidden = visibleEvents >= githubEvents.length
+}
+
+/* FETCH LIVE ACTIVITY */
+
+async function fetchGithubActivity(): Promise<void> {
+  if (githubStatus) {
+    githubStatus.textContent = 'fetching activity …'
   }
 
+  try {
+    const response = await fetch(
+      `https://api.github.com/users/${GITHUB_USERNAME}/events/public?per_page=100`,
+      {
+        headers: {
+          Accept: 'application/vnd.github+json',
+        },
+        cache: 'no-store',
+      },
+    )
 
-/* =========================================================
-   FETCH GITHUB
-========================================================= */
-
-const fetchGithub =
-  async () => {
-
-    try {
-
-      if (githubStatus) {
-
-        githubStatus.textContent =
-          'activity fetch …'
-
-      }
-
-      const response =
-        await fetch(
-          'https://api.github.com/users/arya-prasanth/events/public',
-        )
-
-      if (!response.ok) {
-
-        throw new Error(
-          `GitHub API ${response.status}`,
-        )
-
-      }
-
-      githubEvents =
-        await response.json()
-
-      const oneYearAgo =
-        new Date()
-
-      oneYearAgo.setFullYear(
-        oneYearAgo.getFullYear() - 1,
-      )
-
-      const recent =
-        githubEvents.filter(
-          event =>
-            event.created_at &&
-            new Date(
-              event.created_at,
-            ) >= oneYearAgo,
-        )
-
-      const commits =
-        recent
-          .filter(
-            event =>
-              event.type === 'PushEvent',
-          )
-          .reduce(
-            (
-              total,
-              event,
-            ) =>
-              total +
-              (
-                event.payload
-                  ?.commits
-                  ?.length || 0
-              ),
-            0,
-          )
-
-      if (githubStatus) {
-
-        githubStatus.textContent =
-          'activity fetch complete'
-
-      }
-
-      if (githubSummary) {
-
-        githubSummary.textContent =
-          `${commits} commits last year · public activity live`
-
-      }
-
-      visibleEvents = 3
-
-      renderGithub()
-
-    } catch (error) {
-
-      console.error(error)
-
-      if (githubStatus) {
-
-        githubStatus.textContent =
-          'activity fetch failed'
-
-      }
-
-      if (githubSummary) {
-
-        githubSummary.textContent =
-          'GitHub activity unavailable right now'
-
-      }
-
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`)
     }
 
+    const data: GitHubEvent[] = await response.json()
+
+    githubEvents = data
+    visibleEvents = 5
+
+    if (githubStatus) {
+      githubStatus.textContent = 'connection established ✓'
+    }
+
+    if (githubSummary) {
+      githubSummary.textContent =
+        `${data.length} recent public events · @${GITHUB_USERNAME}`
+    }
+
+    if (data.length === 0 && githubList) {
+      githubList.textContent = 'No recent public activity found.'
+    }
+
+    renderGithubActivity()
+  } catch (error) {
+    console.error('GitHub activity error:', error)
+
+    if (githubStatus) {
+      githubStatus.textContent = 'connection failed ✕'
+    }
+
+    if (githubSummary) {
+      githubSummary.textContent =
+        'Unable to fetch GitHub activity. Try again later.'
+    }
+
+    if (githubList) {
+      githubList.textContent = ''
+    }
   }
+}
 
+/* MORE / LESS */
 
-fetchGithub()
+githubMore?.addEventListener('click', () => {
+  visibleEvents += 5
+  renderGithubActivity()
+})
 
-window.setInterval(
-  fetchGithub,
-  5 * 60 * 1000,
-)
+githubLess?.addEventListener('click', () => {
+  visibleEvents = Math.max(5, visibleEvents - 5)
+  renderGithubActivity()
+})
+
+fetchGithubActivity()
+
+window.setInterval(fetchGithubActivity, 5 * 60 * 1000)
 
 /* =========================================================
    BUY ME A COFFEE
 ========================================================= */
 
-const coffeeCard =
-  document.createElement('section')
+const coffeeCard = document.createElement('section')
 
-coffeeCard.className =
-  'coffee-card'
+coffeeCard.className = 'coffee-card'
 
 coffeeCard.innerHTML = `
-
   <div class="card-heading">
-
-    <span>
-      ~/support
-    </span>
-
+    <span>~/support</span>
   </div>
 
-
   <div class="coffee-heading">
-
     <span class="coffee-eyebrow">
       a little support goes a long way
     </span>
 
-    <h2>
-      Buy me a coffee
-    </h2>
-
+    <h2>buy me a coffee ☕︎</h2>
   </div>
 
-
   <a
-    href="#"
+    href="https://buymeacoffee.com/a.ryaahhh"
     class="coffee-content"
+    target="_blank"
+    rel="noopener noreferrer"
     aria-label="Buy me a coffee"
   >
-
-    <span class="coffee-icon">
-      ☕
-    </span>
+    <span class="coffee-icon">♥</span>
 
     <span class="coffee-text">
-
-      <span>
-        support my work & late-night builds
-      </span>
-
+      <span>support my work and late night builds :)</span>
     </span>
 
-    <span class="coffee-arrow">
-      ↗
-    </span>
-
+    <span class="coffee-arrow">↗</span>
   </a>
-
 `
 
-
 const bentoGrid =
-  document.querySelector(
-    '.bento-grid',
-  )
+  document.querySelector<HTMLElement>('.bento-grid')
 
 if (bentoGrid) {
-
-  bentoGrid.appendChild(
-    coffeeCard,
-  )
-
+  bentoGrid.appendChild(coffeeCard)
 }
-
-/* =========================================================
-   GITHUB BUTTONS
-========================================================= */
-
-githubLess?.addEventListener(
-  'click',
-  () => {
-
-    visibleEvents =
-      Math.max(
-        3,
-        visibleEvents - 3,
-      )
-
-    renderGithub()
-
-  },
-)
-
-
-githubMore?.addEventListener(
-  'click',
-  () => {
-
-    visibleEvents =
-      Math.min(
-        githubEvents.length,
-        visibleEvents + 3,
-      )
-
-    renderGithub()
-
-  },
-)
-
 /* =========================================================
    SMOOTH NAVIGATION
 ========================================================= */
 
-document
-  .querySelectorAll(
-    'a[href^="#"]',
-  )
-  .forEach(
-    link => {
+document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', event => {
+    const targetId = link.getAttribute('href')
 
-      link.addEventListener(
-        'click',
-        event => {
+    if (!targetId || targetId === '#') {
+      return
+    }
 
-          const targetId =
-            link.getAttribute(
-              'href',
-            )
+    const target = document.querySelector(targetId)
 
-          if (
-            !targetId ||
-            targetId === '#'
-          ) {
-            return
-          }
+    if (!target) return
 
-          const target =
-            document.querySelector(
-              targetId,
-            )
+    event.preventDefault()
 
-          if (!target)
-            return
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
 
-          event.preventDefault()
+    if (link.closest('.main-nav')) {
+      document.querySelectorAll('.main-nav a').forEach(nav => {
+        nav.classList.remove('active')
+      })
 
-          target.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-          })
-
-          if (
-            link.closest(
-              '.main-nav',
-            )
-          ) {
-
-            document
-              .querySelectorAll(
-                '.main-nav a',
-              )
-              .forEach(
-                nav =>
-                  nav.classList.remove(
-                    'active',
-                  ),
-              )
-
-            link.classList.add(
-              'active',
-            )
-
-          }
-
-        },
-      )
-
-    },
-  )
+      link.classList.add('active')
+    }
+  })
+})
+// Vercel Web Analytics
+inject()
