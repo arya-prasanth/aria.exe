@@ -528,7 +528,7 @@ app.innerHTML = `
 
       <a
         class="song"
-        href="https://open.spotify.com/search/On%20The%20Floor%20Jennifer%20Lopez"
+        href="https://open.spotify.com/track/7z7kvUQGwlC6iOl7vMuAr9?si=58255d3c33bb4b5b"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -540,11 +540,11 @@ app.innerHTML = `
         <span class="song-info">
 
           <strong>
-            On The Floor
+            Dancing in the Flames
           </strong>
 
           <small>
-            Jennifer Lopez
+            Weekend
           </small>
 
         </span>
@@ -686,9 +686,9 @@ app.innerHTML = `
     <div class="toolkit-list">
 
       <span>Python</span>
-      <span>C</span>
+      <span>R</span>
       <span>C++</span>
-      <span>MySQL</span>
+      <span>SQL</span>
       <span>Excel</span>
       <span>Power BI</span>
       <span>Tableau</span>
