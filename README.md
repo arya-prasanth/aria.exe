@@ -58,6 +58,8 @@ this portfolio takes inspiration from [cyks.in](https://cyks.in/).
 
 a creative spark that inspired me to build my own little digital world, with my own personality, ideas & experiments.
 
+### ✧live website : <a href="https:ariaexe.vercel.app">aria.exe</a>
+
 ### 🌷 find me in other little corners of the internet
 
 leave a little hello 💌 <a href="https://github.com/YOUR-USERNAME">github</a> &nbsp;✧&nbsp;
