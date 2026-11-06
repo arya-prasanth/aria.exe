@@ -1,3 +1,4 @@
+
 import './archive.css'
 
 const app = document.querySelector<HTMLElement>('#archive-app')
@@ -7,11 +8,15 @@ if (!app) {
 }
 
 /* =========================================================
-   ARYA'S ARCHIVE — EDIT YOUR CONTENT HERE
+   PROFILE & API CONFIGURATION
 ========================================================= */
 
 const letterboxdURL = 'https://boxd.it/iuv0p'
 const substackURL = 'https://substack.com/@aryaahhh'
+
+const LETTERBOXD_API = '/api/letterboxd'
+const SUBSTACK_API = '/api/substack'
+const REFRESH_INTERVAL = 5 * 60 * 1000
 
 type Film = {
   title: string
@@ -25,6 +30,7 @@ type Film = {
 
 type DiaryEntry = Film & {
   date: string
+  liked?: boolean
 }
 
 type Read = {
@@ -49,10 +55,44 @@ type Rant = {
   date: string
 }
 
-/*
-  Add your actual Letterboxd numbers below.
-  Keep a value as null if you don't want to display it yet.
-*/
+type LetterboxdResponse = {
+  count?: number
+  diary?: Array<{
+    title?: string
+    link?: string
+    date?: string
+    year?: string
+    rating?: string | number
+    liked?: boolean
+    image?: string
+  }>
+  error?: string
+}
+
+type SubstackResponse = {
+  count?: number
+  posts?: Array<{
+    title?: string
+    description?: string
+    summary?: string
+    content?: string
+    date?: string
+    published?: string
+    publishedAt?: string
+    link?: string
+    url?: string
+  }>
+  error?: string
+}
+
+let diaryEntries: DiaryEntry[] = []
+let articles: Article[] = []
+
+let letterboxdLoaded = false
+let substackLoaded = false
+let refreshInProgress = false
+
+let currentDiaryFilter = 'all'
 
 const profileStats = {
   moviesAllTime: null as number | null,
@@ -62,67 +102,8 @@ const profileStats = {
   substackReads: null as number | null,
 }
 
-/*
-  Add your own films and poster image URLs.
-  Poster URLs should be direct image links.
-*/
-
-const topTen: Film[] = [
-  // Example:
-  // {
-  //   title: 'Past Lives',
-  //   year: '2023',
-  //   director: 'Celine Song',
-  //   poster: 'https://image-url.jpg',
-  //   rating: 5,
-  //   note: 'A film that stayed with me.',
-  //   url: 'https://letterboxd.com/film/past-lives-2023/',
-  // },
-]
-
-const diaryEntries: DiaryEntry[] = [
-  // Example:
-  // {
-  //   title: 'Past Lives',
-  //   year: '2023',
-  //   date: '2026-11-06',
-  //   poster: 'https://image-url.jpg',
-  //   rating: 4.5,
-  //   note: 'Some films feel like memories.',
-  // },
-]
-
-const favouriteReads: Read[] = [
-  // Add your favourite Substack articles/publications here.
-  // {
-  //   title: 'Article title',
-  //   author: 'Writer name',
-  //   description: 'A little description of the article.',
-  //   category: 'PERSONAL ESSAY',
-  //   url: 'https://substack.com/...',
-  // },
-]
-
-const articles: Article[] = [
-  {
-    title: 'A little piece of my mind',
-    description: 'A few thoughts, finally put into words.',
-    date: 'RECENTLY PUBLISHED',
-    url: 'https://substack.com/home/post/p-206972357',
-  },
-  {
-    title: 'Words I once left behind',
-    description: 'Something from a different chapter.',
-    date: 'FROM THE ARCHIVE',
-    url: 'https://substack.com/home/post/p-166808166',
-  },
-  {
-    title: 'Something worth remembering',
-    description: 'A little reminder to keep.',
-    date: 'A NOTE TO SELF',
-    url: 'https://substack.com/home/post/p-221192148',
-  },
-]
+const topTen: Film[] = []
+const favouriteReads: Read[] = []
 
 /* =========================================================
    HELPERS
@@ -149,7 +130,7 @@ const safeURL = (value: string): string => {
       return escapeHTML(url.href)
     }
   } catch {
-    // Invalid URLs fall through to the safe fallback.
+    // Invalid URLs use the safe fallback.
   }
 
   return '#'
@@ -159,14 +140,38 @@ const displayNumber = (value: number | null): string =>
   value === null ? '—' : String(value)
 
 const renderStars = (rating = 0): string => {
-  const fullStars = Math.floor(rating)
-  const hasHalfStar = rating % 1 >= 0.5
+  const safeRating = Number.isFinite(rating)
+    ? Math.max(0, Math.min(5, rating))
+    : 0
+
+  const fullStars = Math.floor(safeRating)
+  const hasHalfStar = safeRating % 1 >= 0.5
 
   return (
     '★'.repeat(fullStars) +
     (hasHalfStar ? '½' : '') +
     '☆'.repeat(Math.max(0, 5 - fullStars - (hasHalfStar ? 1 : 0)))
   )
+}
+
+const formatDate = (value: string): string => {
+  if (!value) return ''
+
+  const date = new Date(`${value.slice(0, 10)}T12:00:00`)
+
+  if (Number.isNaN(date.getTime())) return value
+
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+const stripHTML = (value: string): string => {
+  const element = document.createElement('div')
+  element.innerHTML = value
+  return element.textContent?.trim() || ''
 }
 
 const renderPoster = (film: Film, className = ''): string => {
@@ -210,11 +215,50 @@ const emptyState = (message: string, detail: string): string => `
   </div>
 `
 
+/* =========================================================
+   LIVE STATUS & STATISTICS
+========================================================= */
+
+const setConnectionStatus = (
+  id: string,
+  message: string,
+  success: boolean,
+): void => {
+  const element = document.getElementById(id)
+
+  if (!element) return
+
+  element.textContent = message
+  element.dataset.status = success ? 'online' : 'offline'
+}
+
+const updateStat = (
+  key: string,
+  value: number | null,
+): void => {
+  const card = document.querySelector<HTMLElement>(
+    `.stat-card[data-stat="${key}"]`,
+  )
+
+  const number = card?.querySelector<HTMLElement>('[data-count]')
+
+  if (!number) return
+
+  const displayValue = displayNumber(value)
+
+  number.textContent = displayValue
+  number.dataset.count = displayValue
+}
+
+/* =========================================================
+   LETTERBOXD RENDERING
+========================================================= */
+
 const renderTopTen = (): string => {
   if (!topTen.length) {
     return emptyState(
       'the list is waiting.',
-      'Add your ten favourite films in the topTen array in archive.ts.',
+      'Your personal top ten can be added here whenever you are ready.',
     )
   }
 
@@ -250,37 +294,179 @@ const renderDiary = (entries: DiaryEntry[]): string => {
     )
   }
 
-  return entries.map((film) => {
-    const date = new Date(`${film.date}T12:00:00`)
-    const formattedDate = Number.isNaN(date.getTime())
-      ? film.date
-      : date.toLocaleDateString('en-IN', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
+  return entries.map((film) => `
+    <article class="diary-entry">
+      <time class="diary-date">${escapeHTML(formatDate(film.date))}</time>
+      ${renderPoster(film, 'diary-poster')}
+      <div class="diary-info">
+        <h3>${escapeHTML(film.title)}</h3>
+        <span class="diary-year">${escapeHTML(film.year)}</span>
+        <div class="film-stars">${renderStars(film.rating)}</div>
+      </div>
+      <span class="diary-entry-mark">✳</span>
+    </article>
+  `).join('')
+}
 
-    return `
-      <article class="diary-entry">
-        <time class="diary-date">${escapeHTML(formattedDate)}</time>
-        ${renderPoster(film, 'diary-poster')}
-        <div class="diary-info">
-          <h3>${escapeHTML(film.title)}</h3>
-          <span class="diary-year">${escapeHTML(film.year)}</span>
-          <div class="film-stars">${renderStars(film.rating)}</div>
-          ${film.note ? `<p>${escapeHTML(film.note)}</p>` : ''}
-        </div>
-        <span class="diary-entry-mark">✳</span>
-      </article>
-    `
-  }).join('')
+const applyDiaryFilter = (): void => {
+  const diaryList = document.getElementById('diary-list')
+  if (!diaryList) return
+
+  const entries = Array.from(
+    diaryList.querySelectorAll<HTMLElement>('.diary-entry'),
+  )
+
+  entries.forEach((entry) => {
+    const stars = entry.querySelector('.film-stars')?.textContent?.trim() || ''
+    const isFiveStars = stars === '★★★★★'
+
+    entry.hidden =
+      currentDiaryFilter === 'five' && !isFiveStars
+  })
+}
+
+const updateDiary = (): void => {
+  const diaryList = document.getElementById('diary-list')
+  const diaryCount = document.querySelector<HTMLElement>('.diary-count')
+
+  if (diaryList) {
+    diaryList.innerHTML = renderDiary(diaryEntries)
+  }
+
+  if (diaryCount) {
+    diaryCount.textContent = `${diaryEntries.length} ENTRIES`
+  }
+
+  applyDiaryFilter()
+}
+
+const updateLetterboxdStats = (): void => {
+  const currentYear = new Date().getFullYear()
+
+  // These numbers describe the entries returned by the available feed.
+  // They are not lifetime Letterboxd totals.
+
+  profileStats.moviesAllTime = diaryEntries.length
+
+  profileStats.moviesThisYear = diaryEntries.filter(
+    (film) => film.date.startsWith(String(currentYear)),
+  ).length
+
+  profileStats.likedMovies = diaryEntries.filter(
+    (film) => film.liked === true,
+  ).length
+
+  updateStat('moviesAllTime', profileStats.moviesAllTime)
+  updateStat('moviesThisYear', profileStats.moviesThisYear)
+  updateStat('likedMovies', profileStats.likedMovies)
+}
+
+const fetchLetterboxd = async (): Promise<void> => {
+  try {
+    const response = await fetch(LETTERBOXD_API, {
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Letterboxd API returned ${response.status}`)
+    }
+
+    const data: LetterboxdResponse = await response.json()
+
+    if (data.error) {
+      throw new Error(data.error)
+    }
+
+    const entries = Array.isArray(data.diary) ? data.diary : []
+
+    diaryEntries = entries.map((entry) => {
+      const parsedRating = Number(entry.rating)
+
+      return {
+        title: entry.title || 'Untitled film',
+        year: entry.year || '—',
+        date: entry.date || '',
+        poster: entry.image || '',
+        rating:
+          entry.rating !== undefined &&
+          entry.rating !== '' &&
+          Number.isFinite(parsedRating)
+            ? parsedRating
+            : 0,
+        liked: entry.liked === true,
+        url: entry.link || '',
+      }
+    }).sort((a, b) => b.date.localeCompare(a.date))
+
+    letterboxdLoaded = true
+
+    updateDiary()
+    updateLetterboxdStats()
+
+    setConnectionStatus(
+      'letterboxd-status',
+      `LIVE · ${diaryEntries.length} FILMS`,
+      true,
+    )
+  } catch (error) {
+    console.error('Letterboxd update failed:', error)
+
+    setConnectionStatus(
+      'letterboxd-status',
+      'UNAVAILABLE · TRY AGAIN LATER',
+      false,
+    )
+
+    if (!letterboxdLoaded) {
+      const diaryList = document.getElementById('diary-list')
+
+      if (diaryList) {
+        diaryList.innerHTML = emptyState(
+          'the diary could not load.',
+          'Please refresh the page in a little while.',
+        )
+      }
+
+      const diaryCount = document.querySelector<HTMLElement>('.diary-count')
+
+      if (diaryCount) {
+        diaryCount.textContent = 'UNAVAILABLE'
+      }
+    }
+  }
+}
+
+/* =========================================================
+   SUBSTACK RENDERING
+========================================================= */
+
+const renderArticles = (): string => {
+  if (!articles.length) {
+    return emptyState(
+      'nothing published just yet.',
+      'When you publish a public Substack post, it will appear here automatically.',
+    )
+  }
+
+  return articles.map((article, index) => `
+    <a class="article-row" href="${safeURL(article.url)}"
+      target="_blank" rel="noopener noreferrer">
+      <span class="article-number">${String(index + 1).padStart(2, '0')}</span>
+      <div class="article-copy">
+        <h3>${escapeHTML(article.title)}</h3>
+        <p>${escapeHTML(article.description)}</p>
+      </div>
+      <span class="article-date">${escapeHTML(article.date)}</span>
+      <span class="article-arrow">↗</span>
+    </a>
+  `).join('')
 }
 
 const renderFavouriteReads = (): string => {
   if (!favouriteReads.length) {
     return emptyState(
       'a shelf waiting to be filled.',
-      'Add your favourite Substack reads to the favouriteReads array.',
+      'Your favourite reads can be added here later.',
     )
   }
 
@@ -300,19 +486,79 @@ const renderFavouriteReads = (): string => {
   `).join('')
 }
 
-const renderArticles = (): string =>
-  articles.map((article, index) => `
-    <a class="article-row" href="${safeURL(article.url)}"
-      target="_blank" rel="noopener noreferrer">
-      <span class="article-number">${String(index + 1).padStart(2, '0')}</span>
-      <div class="article-copy">
-        <h3>${escapeHTML(article.title)}</h3>
-        <p>${escapeHTML(article.description)}</p>
-      </div>
-      <span class="article-date">${escapeHTML(article.date)}</span>
-      <span class="article-arrow">↗</span>
-    </a>
-  `).join('')
+const updateArticles = (): void => {
+  const articleList = document.querySelector<HTMLElement>('.article-list')
+
+  if (articleList) {
+    articleList.innerHTML = renderArticles()
+  }
+
+  const readsShelf = document.querySelector<HTMLElement>('.reads-shelf')
+
+  if (readsShelf) {
+    readsShelf.innerHTML = renderFavouriteReads()
+  }
+}
+
+const fetchSubstack = async (): Promise<void> => {
+  try {
+    const response = await fetch(SUBSTACK_API, {
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Substack API returned ${response.status}`)
+    }
+
+    const data: SubstackResponse = await response.json()
+
+    if (data.error) {
+      throw new Error(data.error)
+    }
+
+    const posts = Array.isArray(data.posts) ? data.posts : []
+
+    articles = posts.map((post) => {
+      const rawDate =
+        post.date || post.published || post.publishedAt || ''
+
+      return {
+        title: post.title || 'Untitled post',
+        description: stripHTML(
+          post.description || post.summary || post.content || '',
+        ).slice(0, 220),
+        date: formatDate(rawDate),
+        url: post.url || post.link || substackURL,
+      }
+    })
+
+    substackLoaded = true
+
+    updateArticles()
+    updateStat('substackReads', articles.length)
+
+    setConnectionStatus(
+      'substack-status',
+      articles.length
+        ? `LIVE · ${articles.length} POSTS`
+        : 'CONNECTED · NO POSTS YET',
+      true,
+    )
+  } catch (error) {
+    console.error('Substack update failed:', error)
+
+    setConnectionStatus(
+      'substack-status',
+      'UNAVAILABLE · TRY AGAIN LATER',
+      false,
+    )
+
+    if (!substackLoaded) {
+      articles = []
+      updateArticles()
+    }
+  }
+}
 
 /* =========================================================
    PAGE STRUCTURE
@@ -378,45 +624,37 @@ app.innerHTML = `
         </p>
 
         <div class="stats-grid" aria-label="Profile statistics">
+
           <button class="stat-card" type="button" data-stat="moviesAllTime">
-            <strong data-count="${displayNumber(profileStats.moviesAllTime)}">
-              ${displayNumber(profileStats.moviesAllTime)}
-            </strong>
-            <span>FILMS WATCHED</span>
-            <small>ALL TIME</small>
+            <strong data-count="—">—</strong>
+            <span>FILMS IN FEED</span>
+            <small>LETTERBOXD</small>
           </button>
 
           <button class="stat-card" type="button" data-stat="moviesThisYear">
-            <strong data-count="${displayNumber(profileStats.moviesThisYear)}">
-              ${displayNumber(profileStats.moviesThisYear)}
-            </strong>
+            <strong data-count="—">—</strong>
             <span>WATCHED IN ${currentYear}</span>
-            <small>THIS YEAR</small>
+            <small>IN AVAILABLE FEED</small>
           </button>
 
           <button class="stat-card" type="button" data-stat="watchlist">
-            <strong data-count="${displayNumber(profileStats.watchlist)}">
-              ${displayNumber(profileStats.watchlist)}
-            </strong>
+            <strong data-count="—">—</strong>
             <span>WATCHLIST</span>
             <small>UP NEXT</small>
           </button>
 
           <button class="stat-card" type="button" data-stat="likedMovies">
-            <strong data-count="${displayNumber(profileStats.likedMovies)}">
-              ${displayNumber(profileStats.likedMovies)}
-            </strong>
+            <strong data-count="—">—</strong>
             <span>LIKED FILMS</span>
-            <small>FAVOURITES</small>
+            <small>IN AVAILABLE FEED</small>
           </button>
 
           <button class="stat-card" type="button" data-stat="substackReads">
-            <strong data-count="${displayNumber(profileStats.substackReads)}">
-              ${displayNumber(profileStats.substackReads)}
-            </strong>
-            <span>SUBSTACK READS</span>
-            <small>WORDS COLLECTED</small>
+            <strong data-count="—">—</strong>
+            <span>SUBSTACK POSTS</span>
+            <small>PUBLISHED</small>
           </button>
+
         </div>
 
         <div class="stat-message" id="stat-message" hidden
@@ -461,7 +699,7 @@ app.innerHTML = `
 
         <div class="subsection-heading">
           <h3>recently published</h3>
-          <span>MY WRITING LOG</span>
+          <span id="substack-status">CONNECTING...</span>
         </div>
 
         <div class="article-list">
@@ -529,7 +767,7 @@ app.innerHTML = `
             <span class="eyebrow">THE WATCHED LOG</span>
             <h3>recently watched.</h3>
           </div>
-          <span>MY FILM DIARY</span>
+          <span id="letterboxd-status">CONNECTING...</span>
         </div>
 
         <div class="diary-toolbar">
@@ -541,11 +779,11 @@ app.innerHTML = `
             <button class="filter-button" type="button"
               data-filter="recent">RECENT</button>
           </div>
-          <span class="diary-count">${diaryEntries.length} ENTRIES</span>
+          <span class="diary-count">LOADING...</span>
         </div>
 
         <div class="diary-list" id="diary-list">
-          ${renderDiary(diaryEntries)}
+          ${emptyState('loading your diary.', 'Fetching your latest Letterboxd entries...')}
         </div>
       </section>
 
@@ -666,6 +904,7 @@ mainNav?.querySelectorAll('a').forEach((link) => {
 ========================================================= */
 
 const navLinks = document.querySelectorAll<HTMLAnchorElement>('.main-nav a')
+
 const pageSections = document.querySelectorAll<HTMLElement>(
   '#reads, #films, #rants',
 )
@@ -693,6 +932,7 @@ if ('IntersectionObserver' in window) {
     (entries, observer) => {
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return
+
         entry.target.classList.add('is-visible')
         observer.unobserve(entry.target)
       })
@@ -700,73 +940,24 @@ if ('IntersectionObserver' in window) {
     { threshold: 0.08 },
   )
 
-  document.querySelectorAll('.content-section, .profile-section, .page-note')
-    .forEach((element) => revealObserver.observe(element))
+  document.querySelectorAll(
+    '.content-section, .profile-section, .page-note',
+  ).forEach((element) => revealObserver.observe(element))
 }
 
 /* =========================================================
-   ANIMATED STAT COUNTERS + DETAILS
+   STAT DETAILS
 ========================================================= */
 
 const statCards = document.querySelectorAll<HTMLButtonElement>('.stat-card')
 const statMessage = document.getElementById('stat-message')
 
 const statDescriptions: Record<string, string> = {
-  moviesAllTime: 'Total films logged on your Letterboxd account.',
-  moviesThisYear: `Films watched during ${currentYear}.`,
-  watchlist: 'Films currently waiting on your Letterboxd watchlist.',
-  likedMovies: 'Films you have liked on Letterboxd.',
-  substackReads: 'Articles you have read on Substack.',
-}
-
-const reducedMotion = window.matchMedia(
-  '(prefers-reduced-motion: reduce)',
-).matches
-
-const animateCounter = (element: HTMLElement): void => {
-  const rawValue = element.dataset.count
-
-  if (!rawValue || rawValue === '—') return
-
-  const target = Number(rawValue)
-
-  if (!Number.isFinite(target)) return
-
-  if (reducedMotion) {
-    element.textContent = String(target)
-    return
-  }
-
-  const startTime = performance.now()
-  const duration = 850
-
-  const update = (now: number): void => {
-    const progress = Math.min((now - startTime) / duration, 1)
-    const eased = 1 - Math.pow(1 - progress, 3)
-
-    element.textContent = String(Math.round(target * eased))
-
-    if (progress < 1) {
-      requestAnimationFrame(update)
-    }
-  }
-
-  requestAnimationFrame(update)
-}
-
-if ('IntersectionObserver' in window) {
-  const counterObserver = new IntersectionObserver((entries, observer) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return
-
-      animateCounter(entry.target as HTMLElement)
-      observer.unobserve(entry.target)
-    })
-  })
-
-  document.querySelectorAll<HTMLElement>('[data-count]').forEach((counter) => {
-    counterObserver.observe(counter)
-  })
+  moviesAllTime: 'Number of entries currently returned by your Letterboxd feed. This is not your lifetime total.',
+  moviesThisYear: `Films dated ${currentYear} in the available Letterboxd feed.`,
+  watchlist: 'Your complete Letterboxd watchlist is not provided by this diary feed.',
+  likedMovies: 'Liked films among the entries returned by the Letterboxd diary feed.',
+  substackReads: 'Public posts returned by your Substack feed.',
 }
 
 statCards.forEach((card) => {
@@ -800,35 +991,13 @@ const filterButtons = document.querySelectorAll<HTMLButtonElement>(
   '.filter-button',
 )
 
-const diaryList = document.getElementById('diary-list')
-
-let currentDiaryFilter = 'all'
-
-const applyDiaryFilter = (): void => {
-  if (!diaryList) return
-
-  const entries = Array.from(
-    diaryList.querySelectorAll<HTMLElement>('.diary-entry'),
-  )
-
-  entries.forEach((entry) => {
-    const stars = entry.querySelector('.film-stars')?.textContent || ''
-    const isFiveStars = stars.trim() === '★★★★★'
-
-    entry.hidden = currentDiaryFilter === 'five' && !isFiveStars
-  })
-
-  if (currentDiaryFilter === 'recent') {
-    entries.reverse().forEach((entry) => diaryList.appendChild(entry))
-  }
-}
-
 filterButtons.forEach((button) => {
   button.addEventListener('click', () => {
     filterButtons.forEach((item) => item.classList.remove('active'))
     button.classList.add('active')
 
     currentDiaryFilter = button.dataset.filter || 'all'
+
     applyDiaryFilter()
   })
 })
@@ -845,7 +1014,6 @@ const rantCount = document.getElementById('rant-character-count')
 const rantFeedback = document.getElementById('rant-feedback')
 const rantList = document.getElementById('rant-list')
 const submitRant = document.getElementById('submit-rant')
-
 const rantToday = document.getElementById('rant-today')
 
 if (rantToday) {
@@ -922,7 +1090,9 @@ submitRant?.addEventListener('click', () => {
   const message = rantMessage?.value.trim() || ''
 
   if (!message) {
-    if (rantFeedback) rantFeedback.textContent = 'Write something first :)'
+    if (rantFeedback) {
+      rantFeedback.textContent = 'Write something first :)'
+    }
     return
   }
 
@@ -1024,6 +1194,47 @@ document.querySelectorAll<HTMLElement>('.horizontal-shelf').forEach((shelf) => {
   shelf.addEventListener('pointerup', stopDragging)
   shelf.addEventListener('pointerleave', stopDragging)
   shelf.addEventListener('pointercancel', stopDragging)
+})
+
+/* =========================================================
+   LIVE DATA REFRESH
+========================================================= */
+
+const refreshLiveData = async (): Promise<void> => {
+  if (refreshInProgress) return
+
+  refreshInProgress = true
+
+  try {
+    await Promise.allSettled([
+      fetchLetterboxd(),
+      fetchSubstack(),
+    ])
+  } finally {
+    refreshInProgress = false
+  }
+}
+
+// Fetch immediately when Archive opens.
+void refreshLiveData()
+
+// Refresh every five minutes while the page is open.
+window.setInterval(() => {
+  if (!document.hidden) {
+    void refreshLiveData()
+  }
+}, REFRESH_INTERVAL)
+
+// Refresh when the visitor returns to the Archive tab.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    void refreshLiveData()
+  }
+})
+
+// Refresh when the visitor focuses the browser window.
+window.addEventListener('focus', () => {
+  void refreshLiveData()
 })
 
 /* =========================================================
