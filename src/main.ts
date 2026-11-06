@@ -115,7 +115,7 @@ app.innerHTML = `
   <nav class="main-nav" aria-label="Main navigation">
     <a href="#home" class="active">home</a>
     <a href="#resume">resume</a>
-    <a href="#blog">blog</a>
+    <a href="archive.html">archive</a>
     <a href="#gallery">gallery</a>
   </nav>
 
@@ -410,7 +410,7 @@ app.innerHTML = `
       <span>R</span>
       <span>C++</span>
       <span>SQL</span>
-      <span>Excel</span>
+      <span>PL/SQL</span>
       <span>Power BI</span>
       <span>Tableau</span>
       <span>Figma</span>
@@ -550,7 +550,7 @@ app.innerHTML = `
 
   <!-- SUBSTACK -->
 
-  <section class="card posts-card" id="blog">
+  <section class="card posts-card" id="archive">
 
     <div class="card-heading">
 
