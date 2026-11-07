@@ -48,6 +48,8 @@ think of it as a digital scrapbook with a little bit of code, a little bit of da
 
 not everything here is polished, finished or perfectly planned.
 
+this website is a work in progress, built through a little thing called **vibe coding** — experimenting with ideas, collaborating with AI, breaking things, fixing them & learning along the way.
+
 some things are experiments, some are happy accidents, some are lessons disguised as errors, & some are simply ideas i couldn't leave alone.
 
 this space grows as i do. ♡
