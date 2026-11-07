@@ -2339,3 +2339,49 @@ body.letter-open {
     font-size: 13px;
   }
 }
+/* HEART LETTER — JOURNAL POLAROID */
+
+.letter-polaroid {
+  position: relative;
+  float: right;
+  width: min(34%, 155px);
+  margin: 8px 4px 15px 20px;
+  padding: 8px 8px 25px;
+  background: #f5f0e5;
+  border: 1px solid rgba(80, 65, 45, .12);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, .2);
+  transform: rotate(3deg);
+  transition: transform .3s ease;
+  z-index: 1;
+}
+
+.letter-polaroid:hover {
+  transform: rotate(0deg) translateY(-3px);
+}
+
+.letter-polaroid img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center;
+}
+
+.letter-polaroid figcaption {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  color: #625c50;
+  text-align: center;
+  font-family: Georgia, serif;
+  font-size: 10px;
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .letter-polaroid {
+    width: 115px;
+    margin-left: 12px;
+  }
+}
