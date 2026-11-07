@@ -189,7 +189,7 @@ app.innerHTML = `
             <p>keep it safe. ♡</p>
             <br>
             <p>
-            — aria ♡
+            — aria ✧
             </p>
 
           </div>
