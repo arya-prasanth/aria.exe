@@ -162,7 +162,9 @@ app.innerHTML = `
         >
 
           <div class="letter-paper">
-
+          <figure class="letter-polaroid">
+          <img src="/us.jpeg" alt="A little memory" loading="lazy">
+          </figure>
             <button
               type="button"
               class="letter-close"
@@ -186,8 +188,8 @@ app.innerHTML = `
 
             <p>keep it safe. ♡</p>
 
-            <p class="letter-signoff">
-              — aria ♡
+            <p>
+            — aria ♡
             </p>
 
           </div>
