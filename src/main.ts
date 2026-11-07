@@ -1,3 +1,4 @@
+
 import { inject } from '@vercel/analytics'
 import './style.css'
 
@@ -114,9 +115,9 @@ app.innerHTML = `
 
   <nav class="main-nav" aria-label="Main navigation">
     <a href="#home" class="active">home</a>
-    <a href="#resume">resume</a>
+    <a href="resume.html">resume</a>
     <a href="archive.html">archive</a>
-    <a href="#gallery">gallery</a>
+    <a href="gallery.html">gallery</a>
   </nav>
 
 </header>
@@ -618,7 +619,7 @@ app.innerHTML = `
 
   </section>
 
-  <!-- GITHUB LIVE ACTIVITY -->
+  <!-- GITHUB ACTIVITY -->
 
   <section class="card github-card">
 
@@ -642,48 +643,39 @@ app.innerHTML = `
     </div>
 
     <p id="github-summary" class="muted">
-      loading recent public activity …
+      loading latest public activity …
     </p>
 
     <div id="github-activity-list"></div>
 
-    <div class="github-controls">
-
-      <button id="github-less" type="button" hidden>
-        show less
-      </button>
-
-      <button id="github-more" type="button" hidden>
-        show more
-      </button>
-
-    </div>
-
   </section>
 
   <!-- VISITORS -->
-<section class="card visitors-card">
 
-  <div class="card-heading">
-    <span>~/visitors</span>
-    <span class="live">● tracking</span>
-  </div>
+  <section class="card visitors-card">
 
-  <div class="visitor-number">
-    <span>—</span>
-    <small>page views</small>
-  </div>
+    <div class="card-heading">
+      <span>~/visitors</span>
+      <span class="live">● live</span>
+    </div>
 
-  <div class="visitor-map">
-    <div class="map-grid"></div>
-    <span class="map-label">VERCEL ANALYTICS</span>
-  </div>
+    <div class="visitor-number">
+      <span id="visitor-count">—</span>
+      <small>page views</small>
+    </div>
 
-  <small class="visitor-info">
-    🌏︎ · analytics enabled
-  </small>
+    <div class="visitor-map">
+      <div class="map-grid"></div>
+      <span class="map-label">VERCEL ANALYTICS</span>
+    </div>
 
-</section>
+    <small class="visitor-info" id="visitor-info">
+      🌏︎ · loading page views …
+    </small>
+
+  </section>
+
+</main>
 `
 
 /* =========================================================
@@ -722,7 +714,7 @@ socialCard.innerHTML = `
       </a>
 
       <a
-        href="https://www.linkedin.com/in/arya-prasanth/"
+        href="https://www.linkedin.com/in/arya-pl/"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="LinkedIn"
@@ -894,26 +886,7 @@ document.addEventListener('keydown', event => {
 })
 
 /* =========================================================
-   XP INTERACTION
-========================================================= */
-
-const xpCard =
-  document.querySelector<HTMLButtonElement>('#xp-card')
-
-const xpExpanded =
-  document.querySelector<HTMLElement>('#xp-expanded')
-
-xpCard?.addEventListener('click', () => {
-  const expanded =
-    xpCard.getAttribute('aria-expanded') === 'true'
-
-  xpCard.setAttribute('aria-expanded', String(!expanded))
-  xpExpanded?.setAttribute('aria-hidden', String(expanded))
-  xpExpanded?.classList.toggle('open', !expanded)
-})
-
-/* =========================================================
-   GITHUB LIVE ACTIVITY
+   GITHUB ACTIVITY — LATEST 3 ONLY
 ========================================================= */
 
 interface GitHubEvent {
@@ -944,6 +917,7 @@ interface GitHubEvent {
 }
 
 const GITHUB_USERNAME = 'arya-prasanth'
+const GITHUB_ACTIVITY_LIMIT = 3
 
 const githubStatus =
   document.querySelector<HTMLElement>('#github-status')
@@ -954,16 +928,7 @@ const githubSummary =
 const githubList =
   document.querySelector<HTMLElement>('#github-activity-list')
 
-const githubLess =
-  document.querySelector<HTMLButtonElement>('#github-less')
-
-const githubMore =
-  document.querySelector<HTMLButtonElement>('#github-more')
-
 let githubEvents: GitHubEvent[] = []
-let visibleEvents = 5
-
-/* TIME FORMAT */
 
 function githubTime(date: string): string {
   const timestamp = new Date(date).getTime()
@@ -987,8 +952,6 @@ function githubTime(date: string): string {
     month: 'short',
   })
 }
-
-/* EVENT DESCRIPTION */
 
 function githubEventText(event: GitHubEvent): string {
   const repo = event.repo.name.split('/').pop() || event.repo.name
@@ -1030,14 +993,14 @@ function githubEventText(event: GitHubEvent): string {
   }
 }
 
-/* RENDER ACTIVITY */
+/* RENDER ONLY THE LATEST THREE */
 
 function renderGithubActivity(): void {
-  if (!githubList || !githubMore || !githubLess) return
+  if (!githubList) return
 
   githubList.replaceChildren()
 
-  const displayed = githubEvents.slice(0, visibleEvents)
+  const displayed = githubEvents.slice(0, GITHUB_ACTIVITY_LIMIT)
 
   displayed.forEach(event => {
     const row = document.createElement('div')
@@ -1068,12 +1031,9 @@ function renderGithubActivity(): void {
 
     githubList.appendChild(row)
   })
-
-  githubLess.hidden = visibleEvents <= 5
-  githubMore.hidden = visibleEvents >= githubEvents.length
 }
 
-/* FETCH LIVE ACTIVITY */
+/* FETCH GITHUB ACTIVITY */
 
 async function fetchGithubActivity(): Promise<void> {
   if (githubStatus) {
@@ -1097,19 +1057,27 @@ async function fetchGithubActivity(): Promise<void> {
 
     const data: GitHubEvent[] = await response.json()
 
-    githubEvents = data
-    visibleEvents = 5
+    githubEvents = data.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() -
+        new Date(a.created_at).getTime(),
+    )
 
     if (githubStatus) {
       githubStatus.textContent = 'connection established ✓'
     }
 
     if (githubSummary) {
+      const count = Math.min(
+        githubEvents.length,
+        GITHUB_ACTIVITY_LIMIT,
+      )
+
       githubSummary.textContent =
-        `${data.length} recent public events · @${GITHUB_USERNAME}`
+        `${count} latest public activities · @${GITHUB_USERNAME}`
     }
 
-    if (data.length === 0 && githubList) {
+    if (githubEvents.length === 0 && githubList) {
       githubList.textContent = 'No recent public activity found.'
     }
 
@@ -1132,21 +1100,67 @@ async function fetchGithubActivity(): Promise<void> {
   }
 }
 
-/* MORE / LESS */
-
-githubMore?.addEventListener('click', () => {
-  visibleEvents += 5
-  renderGithubActivity()
-})
-
-githubLess?.addEventListener('click', () => {
-  visibleEvents = Math.max(5, visibleEvents - 5)
-  renderGithubActivity()
-})
-
 fetchGithubActivity()
 
 window.setInterval(fetchGithubActivity, 5 * 60 * 1000)
+
+/* =========================================================
+   VISITORS — REAL VERCEL PAGE VIEWS
+========================================================= */
+
+const visitorCount =
+  document.querySelector<HTMLElement>('#visitor-count')
+
+const visitorInfo =
+  document.querySelector<HTMLElement>('#visitor-info')
+
+async function fetchVisitorCount(): Promise<void> {
+  if (!visitorCount) return
+
+  try {
+    visitorCount.textContent = '...'
+
+    const response = await fetch('/api/visitors', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Visitors API error: ${response.status}`)
+    }
+
+    const result: { pageViews?: number } = await response.json()
+
+    if (
+      typeof result.pageViews !== 'number' ||
+      !Number.isFinite(result.pageViews)
+    ) {
+      throw new Error('Invalid page views response')
+    }
+
+    visitorCount.textContent =
+      result.pageViews.toLocaleString('en-IN')
+
+    if (visitorInfo) {
+      visitorInfo.textContent = '🌏︎ · total production page views'
+    }
+  } catch (error) {
+    console.error('Visitor analytics error:', error)
+
+    visitorCount.textContent = '—'
+
+    if (visitorInfo) {
+      visitorInfo.textContent = ' 🌏︎ · analytics enabled'
+    }
+  }
+}
+
+fetchVisitorCount()
+
+window.setInterval(fetchVisitorCount, 5 * 60 * 1000)
 
 /* =========================================================
    BUY ME A COFFEE
@@ -1166,7 +1180,7 @@ coffeeCard.innerHTML = `
       a little support goes a long way
     </span>
 
-    <h2>buy me a coffee ☕︎</h2>
+    <h1>buy me a coffee ☕︎</h1>
   </div>
 
   <a
@@ -1179,7 +1193,7 @@ coffeeCard.innerHTML = `
     <span class="coffee-icon">♥</span>
 
     <span class="coffee-text">
-      <span>support my work and late night builds :)</span>
+      <span>support my work and late night builds</span>
     </span>
 
     <span class="coffee-arrow">↗</span>
@@ -1192,6 +1206,7 @@ const bentoGrid =
 if (bentoGrid) {
   bentoGrid.appendChild(coffeeCard)
 }
+
 /* =========================================================
    SMOOTH NAVIGATION
 ========================================================= */
@@ -1224,5 +1239,9 @@ document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach(link => {
     }
   })
 })
-// Vercel Web Analytics
+
+/* =========================================================
+   VERCEL WEB ANALYTICS
+========================================================= */
+
 inject()

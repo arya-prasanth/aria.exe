@@ -1,8 +1,4 @@
-/* =========================================================
-   THE ARCHIVE — CLASSIC LETTERBOXD INSPIRED THEME
-========================================================= */
-
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Pacifico:wght@400&family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap');
 
 :root {
   --bg: #14181c;
@@ -10,21 +6,16 @@
   --panel: #1c2228;
   --panel-light: #232b32;
   --panel-hover: #29333b;
-
   --green: #00e054;
   --green-soft: #9be9b2;
-
   --text: #e8edf0;
   --muted: #9ab;
   --dim: #66747e;
-
   --border: #303a42;
   --border-light: #3b4852;
-
   --sans: 'DM Sans', sans-serif;
   --mono: 'DM Mono', monospace;
   --serif: 'Playfair Display', serif;
-
   --page-width: 1000px;
   --header-height: 64px;
 }
@@ -126,11 +117,9 @@ textarea:focus-visible {
 .read-card-bottom,
 .diary-date,
 .diary-count,
-.filter-button,
 .editor-heading,
 .rant-editor label,
 .editor-bottom,
-.storage-note,
 .rant-entry-header time,
 .delete-rant,
 .footer-copy > span,
@@ -179,12 +168,19 @@ textarea:focus-visible {
   height: 29px;
   display: grid;
   place-items: center;
-  border-radius: 7px;
+  border-radius: 9px;
   background: var(--green);
   color: #102016;
   font-family: var(--serif);
   font-size: 20px;
   font-weight: 700;
+  transform: rotate(-5deg);
+}
+
+.logo-sparkle {
+  color: var(--green);
+  font-size: 13px;
+  animation: sparkle 3s ease-in-out infinite;
 }
 
 .main-nav {
@@ -204,13 +200,6 @@ textarea:focus-visible {
   font-size: 12px;
   font-weight: 600;
   transition: color .2s ease;
-}
-
-.main-nav a span {
-  margin-left: 4px;
-  color: var(--dim);
-  font-size: 10px;
-  font-weight: 400;
 }
 
 .main-nav a::after {
@@ -245,7 +234,7 @@ textarea:focus-visible {
   flex-direction: column;
   gap: 6px;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: 8px;
   background: transparent;
   cursor: pointer;
 }
@@ -286,7 +275,7 @@ textarea:focus-visible {
     radial-gradient(ellipse at 90% 0%, rgba(0, 224, 84, .10), transparent 38%),
     #1c2928;
   border: 1px solid #34463d;
-  border-radius: 7px;
+  border-radius: 10px;
 }
 
 .banner-pattern {
@@ -319,12 +308,41 @@ textarea:focus-visible {
 
 .banner-title {
   position: relative;
+  z-index: 1;
   color: #e7f5e9;
   font-family: var(--serif);
   font-size: clamp(35px, 7vw, 67px);
   font-weight: 500;
   letter-spacing: -.055em;
   text-shadow: 0 8px 40px rgba(0,0,0,.2);
+}
+
+.banner-doodle {
+  position: absolute;
+  z-index: 1;
+  color: rgba(155, 233, 178, .65);
+  pointer-events: none;
+}
+
+.doodle-one {
+  top: 47px;
+  right: 14%;
+  font-size: 25px;
+  animation: floaty 5s ease-in-out infinite;
+}
+
+.doodle-two {
+  bottom: 40px;
+  left: 12%;
+  font-size: 24px;
+  animation: floaty 6s ease-in-out infinite reverse;
+}
+
+.doodle-three {
+  top: 42px;
+  left: 28%;
+  font-size: 18px;
+  animation: sparkle 4s ease-in-out infinite;
 }
 
 .profile-heading {
@@ -335,13 +353,15 @@ textarea:focus-visible {
 }
 
 .profile-avatar {
+  position: relative;
   width: 76px;
   height: 76px;
   flex: 0 0 76px;
   display: grid;
   place-items: center;
+  overflow: hidden;
   border: 4px solid var(--bg);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--green);
   color: #112017;
   font-family: var(--serif);
@@ -350,8 +370,22 @@ textarea:focus-visible {
   box-shadow: 0 0 0 1px var(--border);
 }
 
-.profile-avatar span {
-  margin-left: -7px;
+.profile-avatar img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar .avatar-fallback {
+  position: relative;
+  z-index: 0;
+}
+
+.profile-avatar.avatar-placeholder img {
+  display: none;
 }
 
 .profile-title {
@@ -370,34 +404,29 @@ textarea:focus-visible {
   letter-spacing: -.06em;
 }
 
+/* Cute font for aria */
+
+.profile-title h1.aria-name {
+  font-family: 'Pacifico', cursive;
+  font-size: 31px;
+  font-weight: 400;
+  letter-spacing: .01em;
+  line-height: 1.3;
+}
+
 .profile-title p {
   margin: 5px 0 0;
   color: var(--muted);
   font-size: 12px;
 }
 
-.profile-link {
-  margin-left: auto;
-  padding: 9px 13px;
-  border: 1px solid var(--border-light);
-  border-radius: 4px;
-  color: var(--green);
-  font-family: var(--mono);
-  font-size: 9px;
-  transition: background .2s ease, border-color .2s ease;
-}
-
-.profile-link:hover {
-  border-color: var(--green);
-  background: rgba(0,224,84,.08);
-}
-
 .profile-bio {
-  max-width: 690px;
+  max-width: 100%;
   margin: 12px 0 22px 3px;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.8;
+  white-space: nowrap;
 }
 
 /* =========================================================
@@ -408,7 +437,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--panel);
 }
@@ -425,7 +454,6 @@ textarea:focus-visible {
   border: 0;
   border-right: 1px solid var(--border);
   background: transparent;
-  cursor: pointer;
   transition: background .2s ease;
 }
 
@@ -433,8 +461,7 @@ textarea:focus-visible {
   border-right: 0;
 }
 
-.stat-card:hover,
-.stat-card.selected {
+.stat-card:hover {
   background: var(--panel-hover);
 }
 
@@ -455,28 +482,6 @@ textarea:focus-visible {
 .stat-card small {
   color: var(--dim);
   font-size: 7px;
-}
-
-.stat-message {
-  margin-top: 9px;
-  padding: 12px 15px;
-  border-left: 2px solid var(--green);
-  background: var(--panel);
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.7;
-  animation: message-in .2s ease both;
-}
-
-@keyframes message-in {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .page-note {
@@ -542,13 +547,14 @@ textarea:focus-visible {
   flex: 0 0 auto;
   padding: 9px 12px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 20px;
   color: var(--green);
   font-size: 8px;
-  transition: background .2s ease;
+  transition: background .2s ease, border-color .2s ease;
 }
 
 .section-external:hover {
+  border-color: var(--green);
   background: rgba(0,224,84,.08);
 }
 
@@ -600,18 +606,20 @@ textarea:focus-visible {
   gap: 25px;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 9px;
   background:
     radial-gradient(ellipse at 100% 0%, rgba(0,224,84,.08), transparent 55%),
     var(--panel);
 }
 
 .substack-symbol {
+  position: relative;
   width: 95px;
   height: 95px;
   flex: 0 0 95px;
   display: grid;
   place-items: center;
+  overflow: hidden;
   border: 1px solid rgba(0,224,84,.45);
   border-radius: 50%;
   background: rgba(0,224,84,.08);
@@ -619,6 +627,24 @@ textarea:focus-visible {
   font-family: var(--serif);
   font-size: 55px;
   font-weight: 700;
+}
+
+.substack-symbol img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.substack-symbol > span {
+  position: relative;
+  z-index: 0;
+}
+
+.substack-symbol.symbol-placeholder img {
+  display: none;
 }
 
 .substack-copy {
@@ -648,8 +674,8 @@ textarea:focus-visible {
 .substack-copy > a,
 .letterboxd-card > div > a {
   display: inline-block;
-  padding: 9px 12px;
-  border-radius: 3px;
+  padding: 9px 13px;
+  border-radius: 20px;
   background: var(--green);
   color: #102016;
   font-family: var(--mono);
@@ -701,7 +727,7 @@ textarea:focus-visible {
 
 .article-number {
   color: var(--green);
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .article-copy {
@@ -775,7 +801,7 @@ textarea:focus-visible {
 }
 
 /* =========================================================
-   FAVOURITE READS SHELF
+   FAVOURITE READS
 ========================================================= */
 
 .read-card {
@@ -789,14 +815,25 @@ textarea:focus-visible {
   overflow: hidden;
   scroll-snap-align: start;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: 9px;
   background: var(--panel);
   transition: transform .22s ease, border-color .22s ease,
     background .22s ease;
 }
 
+.read-card::after {
+  position: absolute;
+  right: 12px;
+  bottom: 36px;
+  color: rgba(0,224,84,.08);
+  font-family: var(--serif);
+  font-size: 48px;
+  content: '✿';
+  pointer-events: none;
+}
+
 .read-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-5px) rotate(-.5deg);
   border-color: #54745e;
   background: var(--panel-light);
 }
@@ -857,7 +894,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 22px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 9px;
   background:
     radial-gradient(ellipse at 0% 100%, rgba(0,224,84,.08), transparent 55%),
     var(--panel);
@@ -907,7 +944,7 @@ textarea:focus-visible {
 }
 
 /* =========================================================
-   TOP TEN POSTER SHELF
+   TOP FOUR POSTER SHELF
 ========================================================= */
 
 .top-ten-heading {
@@ -927,7 +964,7 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   scroll-snap-align: start;
-  cursor: pointer;
+  cursor: default;
   transition: transform .25s ease;
 }
 
@@ -936,28 +973,13 @@ textarea:focus-visible {
   transform: translateY(-7px);
 }
 
-.poster-rank {
-  position: absolute;
-  z-index: 3;
-  top: 8px;
-  left: 8px;
-  min-width: 27px;
-  padding: 5px 6px;
-  border-radius: 3px;
-  background: rgba(15,20,23,.88);
-  color: var(--green);
-  font-family: var(--mono);
-  font-size: 9px;
-  text-align: center;
-}
-
 .poster-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 5px;
   background: #222b31;
 }
 
@@ -1032,13 +1054,6 @@ textarea:focus-visible {
   font-size: 8px;
 }
 
-.film-stars {
-  margin-top: 5px;
-  color: var(--green);
-  font-size: 11px;
-  letter-spacing: 1px;
-}
-
 /* =========================================================
    EMPTY STATES
 ========================================================= */
@@ -1052,7 +1067,7 @@ textarea:focus-visible {
   justify-content: center;
   flex-direction: column;
   border: 1px dashed var(--border-light);
-  border-radius: 5px;
+  border-radius: 8px;
   background: rgba(255,255,255,.012);
   text-align: center;
 }
@@ -1060,6 +1075,7 @@ textarea:focus-visible {
 .empty-state-icon {
   color: var(--green);
   font-size: 25px;
+  animation: floaty 4s ease-in-out infinite;
 }
 
 .empty-state h3 {
@@ -1101,29 +1117,6 @@ textarea:focus-visible {
   border-bottom: 1px solid var(--border);
 }
 
-.diary-filters {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.filter-button {
-  padding: 7px 10px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--dim);
-  font-size: 8px;
-  cursor: pointer;
-  transition: color .2s ease, background .2s ease;
-}
-
-.filter-button:hover,
-.filter-button.active {
-  background: var(--panel-light);
-  color: var(--green);
-}
-
 .diary-count {
   color: var(--dim);
   font-size: 8px;
@@ -1156,7 +1149,7 @@ textarea:focus-visible {
 .diary-poster {
   width: 55px;
   aspect-ratio: 2 / 3;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .diary-poster .poster-fallback {
@@ -1197,19 +1190,57 @@ textarea:focus-visible {
 
 .diary-info .film-stars {
   margin-top: 5px;
+  color: var(--green);
+  font-size: 11px;
+  letter-spacing: 1px;
 }
 
-.diary-info p {
-  margin: 5px 0 0;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 10px;
-  text-overflow: ellipsis;
+.diary-open-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: .06em;
+}
+
+.diary-open-link:hover {
+  text-decoration: underline;
 }
 
 .diary-entry-mark {
   color: var(--green);
   font-size: 13px;
+}
+
+/* =========================================================
+   LETTERBOXD SHORTCUT BUTTONS
+========================================================= */
+
+.film-shortcuts {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.film-shortcuts a {
+  padding: 10px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: 30px;
+  background: var(--panel);
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .04em;
+  transition: transform .2s ease, border-color .2s ease,
+    background .2s ease;
+}
+
+.film-shortcuts a:hover {
+  transform: translateY(-2px);
+  border-color: var(--green);
+  background: rgba(0,224,84,.07);
 }
 
 /* =========================================================
@@ -1223,7 +1254,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 22px;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: 9px;
   background:
     radial-gradient(ellipse at 100% 0%, rgba(0,224,84,.08), transparent 55%),
     var(--panel);
@@ -1254,17 +1285,20 @@ textarea:focus-visible {
 }
 
 .rant-intro p {
-  max-width: 580px;
+  max-width: 100%;
   margin: 7px 0 0;
   color: var(--muted);
   font-size: 11px;
   line-height: 1.75;
+  white-space: nowrap;
 }
+
+/* Old editor styles retained for compatibility */
 
 .rant-editor {
   padding: 20px;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: 9px;
   background: var(--panel);
 }
 
@@ -1289,7 +1323,7 @@ textarea:focus-visible {
 .rant-editor textarea {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 6px;
   outline: none;
   background: var(--bg);
   color: var(--text);
@@ -1298,12 +1332,12 @@ textarea:focus-visible {
 }
 
 .rant-editor input {
-  height: 39px;
+  height: 42px;
   padding: 0 12px;
 }
 
 .rant-editor textarea {
-  min-height: 125px;
+  min-height: 160px;
   padding: 12px;
   resize: vertical;
   line-height: 1.7;
@@ -1320,6 +1354,74 @@ textarea:focus-visible {
   box-shadow: 0 0 0 2px rgba(0,224,84,.08);
 }
 
+.owner-login > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 15px;
+}
+
+.owner-login > button {
+  margin-top: 12px;
+  padding: 11px 15px;
+  border: 0;
+  border-radius: 30px;
+  background: var(--green);
+  color: #102016;
+  font-family: var(--mono);
+  font-size: 8px;
+  cursor: pointer;
+  transition: transform .2s ease, background .2s ease;
+}
+
+.owner-login > button:hover {
+  transform: translateY(-2px);
+  background: #52f58a;
+}
+
+.owner-login > button:disabled,
+.editor-bottom button:disabled {
+  opacity: .55;
+  cursor: wait;
+  transform: none;
+}
+
+#rant-admin-status {
+  display: block;
+  min-height: 16px;
+  margin-top: 10px;
+  color: var(--green-soft);
+  font-size: 10px;
+}
+
+.owner-composer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 8px;
+}
+
+.owner-composer-heading button {
+  padding: 7px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 7px;
+  cursor: pointer;
+  transition: border-color .2s ease, color .2s ease;
+}
+
+.owner-composer-heading button:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
 .editor-bottom {
   margin-top: 12px;
   display: flex;
@@ -1331,9 +1433,9 @@ textarea:focus-visible {
 }
 
 .editor-bottom button {
-  padding: 10px 15px;
+  padding: 11px 16px;
   border: 0;
-  border-radius: 3px;
+  border-radius: 30px;
   background: var(--green);
   color: #102016;
   font-family: var(--mono);
@@ -1355,14 +1457,6 @@ textarea:focus-visible {
   font-size: 10px;
 }
 
-.storage-note {
-  display: block;
-  margin-top: 8px;
-  color: var(--dim);
-  font-size: 7px;
-  line-height: 1.6;
-}
-
 .rant-log-heading {
   margin-top: 35px;
 }
@@ -1372,7 +1466,7 @@ textarea:focus-visible {
 }
 
 .rant-entry {
-  padding: 17px 5px;
+  padding: 20px 8px;
   border-bottom: 1px solid var(--border);
   animation: rant-in .25s ease both;
 }
@@ -1407,17 +1501,26 @@ textarea:focus-visible {
   font-size: 8px;
 }
 
-.rant-entry > p {
-  margin: 12px 0;
+.rant-entry > h3 {
+  margin: 12px 0 5px;
   color: var(--text);
   font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -.025em;
+}
+
+.rant-entry > p {
+  margin: 8px 0 12px;
+  color: var(--muted);
+  font-family: var(--serif);
   font-size: 15px;
-  line-height: 1.75;
+  line-height: 1.85;
   overflow-wrap: anywhere;
 }
 
 .delete-rant {
-  padding: 4px 0;
+  padding: 5px 0;
   border: 0;
   background: transparent;
   color: var(--dim);
@@ -1429,9 +1532,406 @@ textarea:focus-visible {
   color: var(--green);
 }
 
-.rant-empty {
-  margin-top: 12px;
-  min-height: 125px;
+/* =========================================================
+   SPARKLE PROMPT
+========================================================= */
+
+.stardust-trigger {
+  position: relative;
+  width: auto;
+  min-width: 38px;
+  padding: 10px 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  overflow: visible;
+  border: 1px solid rgba(0,224,84,.4);
+  border-radius: 999px;
+  background: rgba(0,224,84,.06);
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .05em;
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.stardust-trigger:hover {
+  transform: translateY(-2px);
+  background: rgba(0,224,84,.13);
+}
+
+.stardust-trigger .sparkle-prompt {
+  position: absolute;
+  right: 43px;
+  top: 50%;
+  width: max-content;
+  transform: translateY(-50%);
+  color: var(--green-soft);
+  font: 9px var(--mono);
+  letter-spacing: .04em;
+  opacity: 0;
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: none;
+}
+
+.stardust-trigger:hover .sparkle-prompt,
+.stardust-trigger:focus-visible .sparkle-prompt {
+  opacity: 1;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+/* =========================================================
+   STARDUST COLLECTOR — MODAL
+========================================================= */
+
+.stardust-modal {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 9, 10, .82);
+  backdrop-filter: blur(10px);
+}
+
+.stardust-panel {
+  position: relative;
+  width: min(100%, 540px);
+  padding: 27px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0,224,84,.12), transparent 60%),
+    var(--panel);
+  box-shadow: 0 25px 90px rgba(0,0,0,.4);
+}
+
+.stardust-close {
+  position: absolute;
+  top: 15px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.stardust-close:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.stardust-heading {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.stardust-heading .eyebrow {
+  color: var(--green);
+  font-size: 8px;
+}
+
+.stardust-heading h2 {
+  margin: 7px 0;
+  font-family: var(--serif);
+  font-size: 31px;
+  font-weight: 500;
+}
+
+.stardust-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.stardust-stats {
+  margin-bottom: 13px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stardust-stats span {
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.stardust-stats strong {
+  color: var(--green);
+  font-size: 15px;
+}
+
+.stardust-field {
+  position: relative;
+  height: 245px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 20% 25%, rgba(0,224,84,.09), transparent 30%),
+    radial-gradient(circle at 80% 75%, rgba(0,224,84,.06), transparent 30%),
+    var(--bg-deep);
+}
+
+.stardust-item {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(0,224,84,.35);
+  border-radius: 50%;
+  background: rgba(0,224,84,.1);
+  color: var(--green-soft);
+  font-size: 21px;
+  cursor: pointer;
+  animation: stardust-pop .25s ease both;
+  transition: transform .15s ease, background .15s ease;
+}
+
+.stardust-item:hover {
+  transform: scale(1.2);
+  background: rgba(0,224,84,.2);
+}
+
+@keyframes stardust-pop {
+  from {
+    opacity: 0;
+    transform: scale(.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.stardust-start {
+  padding: 25px 0 5px;
+  text-align: center;
+}
+
+.stardust-start p,
+.stardust-result {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.stardust-start button,
+.stardust-restart {
+  margin-top: 10px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 30px;
+  background: var(--green);
+  color: #102016;
+  font-family: var(--mono);
+  font-size: 9px;
+  cursor: pointer;
+  transition: transform .2s ease, background .2s ease;
+}
+
+.stardust-start button:hover,
+.stardust-restart:hover {
+  transform: translateY(-2px);
+  background: #52f58a;
+}
+
+.stardust-result {
+  min-height: 20px;
+  margin-top: 15px;
+  color: var(--green-soft);
+  text-align: center;
+}
+
+/* =========================================================
+   TINY GARDEN — WATERING VERSION
+========================================================= */
+
+.tiny-garden-section {
+  position: relative;
+}
+
+.garden-card {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: 25px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(0,224,84,.055), transparent 45%),
+    var(--panel);
+}
+
+.garden-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.garden-copy > .eyebrow {
+  color: var(--green);
+  font: 8px var(--mono);
+  letter-spacing: .1em;
+}
+
+.garden-copy h3 {
+  margin: 13px 0 9px;
+  font: 500 clamp(22px, 3vw, 30px)/1.2 var(--serif);
+}
+
+.garden-copy > p {
+  max-width: 360px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.garden-feedback {
+  min-height: 22px;
+  margin: 14px 0;
+  color: var(--green-soft);
+  font: 9px var(--mono);
+}
+
+.garden-water-button {
+  padding: 12px 16px;
+  border: 1px solid rgba(155,233,178,.35);
+  border-radius: 7px;
+  background: rgba(0,224,84,.08);
+  color: var(--green-soft);
+  font: 9px var(--mono);
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: transform .2s ease, background .2s ease;
+}
+
+.garden-water-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: rgba(0,224,84,.16);
+}
+
+.garden-water-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.garden-visual {
+  position: relative;
+  min-height: 270px;
+  overflow: hidden;
+  border: 1px solid rgba(155,233,178,.12);
+  border-radius: 10px;
+  background: linear-gradient(
+    180deg,
+    #18232b 0%,
+    #263b42 66%,
+    #273b2c 66%,
+    #1b2c20 100%
+  );
+}
+
+.garden-sky {
+  position: absolute;
+  inset: 0 0 34% 0;
+}
+
+.garden-moon {
+  position: absolute;
+  top: 18px;
+  right: 25px;
+  color: #f5e9b9;
+  font-size: 26px;
+  animation: moon-float 5s ease-in-out infinite;
+}
+
+.garden-star {
+  position: absolute;
+  color: #d7e9cb;
+  animation: sparkle 3s ease-in-out infinite;
+}
+
+.garden-star-one {
+  top: 45px;
+  left: 20%;
+  font-size: 18px;
+}
+
+.garden-star-two {
+  top: 95px;
+  right: 25%;
+  font-size: 14px;
+}
+
+.garden-cloud {
+  position: absolute;
+  top: 85px;
+  left: 12%;
+  color: rgba(214,239,215,.35);
+  font-size: 38px;
+}
+
+.garden-ground {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  min-height: 110px;
+  padding: 15px 17px 10px;
+  border-top: 2px solid rgba(155,233,178,.3);
+  background: #253a2c;
+}
+
+.garden-flower-grid {
+  min-height: 70px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.garden-flower {
+  display: inline-block;
+  color: #b8e9a8;
+  font-size: 27px;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,.2));
+  animation: flower-grow .4s ease both;
+}
+
+@keyframes flower-grow {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(.4);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes moon-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 /* =========================================================
@@ -1459,12 +1959,13 @@ textarea:focus-visible {
   flex: 0 0 60px;
   display: grid;
   place-items: center;
-  border-radius: 7px;
+  border-radius: 12px;
   background: var(--green);
   color: #102016;
   font-family: var(--serif);
   font-size: 39px;
   font-weight: 700;
+  transform: rotate(-4deg);
 }
 
 .footer-copy {
@@ -1494,26 +1995,33 @@ textarea:focus-visible {
 .back-to-top {
   color: var(--green);
   font-size: 8px;
+  transition: opacity .2s ease;
+}
+
+.back-to-top:hover {
+  opacity: .7;
 }
 
 .footer-links {
   max-width: var(--page-width);
   margin: 22px auto;
   display: flex;
+  flex-wrap: wrap;
   gap: 9px;
 }
 
 .footer-links a {
-  padding: 9px 12px;
+  padding: 9px 13px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 22px;
   color: var(--green);
   font-family: var(--mono);
   font-size: 8px;
-  transition: background .2s ease;
+  transition: background .2s ease, border-color .2s ease;
 }
 
 .footer-links a:hover {
+  border-color: var(--green);
   background: rgba(0,224,84,.08);
 }
 
@@ -1530,11 +2038,65 @@ textarea:focus-visible {
 }
 
 .footer-bottom a {
-  color: var(--muted);
+  color: var(--green);
 }
 
 .footer-bottom a:hover {
-  color: var(--green);
+  opacity: .7;
+}
+
+/* =========================================================
+   LITTLE ANIMATIONS
+========================================================= */
+
+@keyframes floaty {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: .6;
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(15deg) scale(1.15);
+  }
+}
+
+.content-section,
+.profile-section,
+.page-note {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .65s ease, transform .65s ease;
+}
+
+.content-section.is-visible,
+.profile-section.is-visible,
+.page-note.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+html.archive-ready .profile-section {
+  animation: page-appear .7s ease both;
+}
+
+@keyframes page-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* =========================================================
@@ -1674,6 +2236,21 @@ textarea:focus-visible {
     font-size: clamp(34px, 10vw, 49px);
   }
 
+  .doodle-one {
+    right: 8%;
+    font-size: 18px;
+  }
+
+  .doodle-two {
+    left: 7%;
+    font-size: 18px;
+  }
+
+  .doodle-three {
+    left: 20%;
+    font-size: 14px;
+  }
+
   .profile-heading {
     align-items: center;
     gap: 12px;
@@ -1695,19 +2272,20 @@ textarea:focus-visible {
     font-size: 25px;
   }
 
+  .profile-title h1.aria-name {
+    font-size: 26px;
+  }
+
   .profile-title p {
     max-width: 220px;
     font-size: 10px;
     line-height: 1.5;
   }
 
-  .profile-link {
-    display: none;
-  }
-
   .profile-bio {
     margin-top: 9px;
     font-size: 11px;
+    white-space: normal;
   }
 
   .stats-grid {
@@ -1910,6 +2488,15 @@ textarea:focus-visible {
     font-size: 9px;
   }
 
+  .film-shortcuts {
+    gap: 7px;
+  }
+
+  .film-shortcuts a {
+    padding: 9px 11px;
+    font-size: 7px;
+  }
+
   .rant-intro {
     padding: 16px;
     align-items: flex-start;
@@ -1929,10 +2516,15 @@ textarea:focus-visible {
 
   .rant-intro p {
     font-size: 10px;
+    white-space: normal;
   }
 
   .rant-editor {
     padding: 14px;
+  }
+
+  .editor-heading {
+    font-size: 7px;
   }
 
   .editor-bottom {
@@ -1942,6 +2534,48 @@ textarea:focus-visible {
   .editor-bottom button {
     padding: 10px;
     font-size: 7px;
+  }
+
+  .rant-entry > h3 {
+    font-size: 18px;
+  }
+
+  .rant-entry > p {
+    font-size: 14px;
+  }
+
+  .stardust-modal {
+    padding: 12px;
+  }
+
+  .stardust-panel {
+    padding: 20px 15px;
+  }
+
+  .stardust-heading h2 {
+    font-size: 26px;
+  }
+
+  .stardust-field {
+    height: 220px;
+  }
+
+  .garden-card {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 17px;
+  }
+
+  .garden-copy {
+    padding: 4px;
+  }
+
+  .garden-visual {
+    min-height: 250px;
+  }
+
+  .garden-sky {
+    min-height: 155px;
   }
 
   .footer-main {
@@ -1966,6 +2600,15 @@ textarea:focus-visible {
 
   .back-to-top {
     display: none;
+  }
+
+  .footer-links {
+    gap: 6px;
+  }
+
+  .footer-links a {
+    padding: 8px 10px;
+    font-size: 7px;
   }
 
   .footer-bottom {
@@ -2010,6 +2653,11 @@ textarea:focus-visible {
   .diary-poster {
     width: 48px;
   }
+
+  .film-shortcuts a {
+    font-size: 6px;
+    padding: 8px 9px;
+  }
 }
 
 /* =========================================================
@@ -2024,5 +2672,151 @@ textarea:focus-visible {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+/* =========================================================
+   UPDATED GAME INTERACTIONS
+========================================================= */
+
+/* Stardust collector */
+
+.stardust-field {
+  isolation: isolate;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.stardust-item {
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stardust-item:active {
+  transform: scale(.82);
+}
+
+.falling-treasure {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  animation: treasure-fall linear forwards;
+}
+
+.treasure-star,
+.treasure-heart,
+.treasure-flower {
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .25));
+  transition: transform .2s ease;
+}
+
+.falling-treasure:hover .treasure-star,
+.falling-treasure:hover .treasure-heart,
+.falling-treasure:hover .treasure-flower {
+  transform: scale(1.25) rotate(12deg);
+}
+
+@keyframes treasure-fall {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) rotate(-15deg);
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(270px) rotate(35deg);
+  }
+}
+
+/* Tiny garden interactions */
+
+.garden-flower {
+  position: relative;
+  cursor: pointer;
+  transform-origin: bottom center;
+  transition:
+    transform .25s ease,
+    filter .25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.garden-flower:hover {
+  transform: translateY(-5px) scale(1.12);
+}
+
+.garden-flower.is-selected {
+  transform: translateY(-7px) scale(1.18);
+  filter:
+    drop-shadow(0 0 7px rgba(155, 233, 178, .65));
+}
+
+.garden-flower.is-watered {
+  color: #f4c8df;
+  filter:
+    drop-shadow(0 0 8px rgba(244, 200, 223, .4));
+}
+
+.garden-splash {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  color: #a8e9ff;
+  font-size: 17px;
+  animation: garden-splash 700ms ease-out forwards;
+}
+
+@keyframes garden-splash {
+  0% {
+    opacity: 0;
+    transform: translateY(5px) scale(.5);
+  }
+
+  25% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.15);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-28px) scale(.75);
+  }
+}
+
+/* Accessible button feedback */
+
+.stardust-start button:focus-visible,
+.stardust-restart:focus-visible,
+.garden-water-button:focus-visible,
+.stardust-close:focus-visible {
+  outline: 2px solid var(--green-soft);
+  outline-offset: 4px;
+}
+
+/* Prevent accidental horizontal overflow */
+
+.stardust-panel,
+.garden-card,
+.garden-visual {
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  .falling-treasure {
+    font-size: 20px;
+  }
+
+  .garden-flower {
+    font-size: 25px;
+  }
+
+  .garden-splash {
+    font-size: 15px;
   }
 }
