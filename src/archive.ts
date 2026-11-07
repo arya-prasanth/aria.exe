@@ -1,7 +1,6 @@
 import './archive.css'
 
 const app = document.querySelector<HTMLElement>('#archive-app')
-
 if (!app) throw new Error('Archive app element not found')
 
 /* =========================================================
@@ -16,9 +15,7 @@ const spotifyURL =
 const LETTERBOXD_API = '/api/letterboxd'
 const SUBSTACK_API = '/api/substack'
 const RANTS_API = '/api/rants'
-
 const REFRESH_INTERVAL = 5 * 60 * 1000
-const RANT_ADMIN_SESSION = 'aria-rant-admin-session'
 
 const MAIN_PROFILE_IMAGE = '/images/aria-profile.jpg'
 const SUBSTACK_PROFILE_IMAGE = '/images/substack-profile.jpg'
@@ -119,7 +116,6 @@ let rants: Rant[] = []
 let letterboxdLoaded = false
 let substackLoaded = false
 let refreshInProgress = false
-let rantRequestInProgress = false
 
 const profileStats = {
   moviesAllTime: letterboxdSnapshot.moviesAllTime as number | null,
@@ -130,7 +126,7 @@ const profileStats = {
 }
 
 /* =========================================================
-   FAVOURITE FILMS
+   STATIC CONTENT
 ========================================================= */
 
 const topFour: Film[] = [
@@ -138,35 +134,43 @@ const topFour: Film[] = [
     title: 'Past Lives',
     year: '2023',
     poster:
-      'https://dx35vtwkllhj9.cloudfront.net/a24films/past-lives/images/regions/us/onesheet.jpg',
+      'https://image.tmdb.org/t/p/w1280/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg',
   },
   {
     title: 'Your Name',
     year: '2016',
     poster:
-      'https://cdn.posteritati.com/posters/000/000/049/033/your-name-md-web.jpg',
-  },
-  {
-    title: 'Spirited Away',
-    year: '2001',
-    poster:
-      'https://baseec-img-mng.akamaized.net/images/item/origin/05e4ce286f475a0e81f120d1590ddf01.jpg?im=Resize%2Cwidth%3D1200%2Ctype%3Dnormal&imformat=generic&q=90',
+      'https://image.tmdb.org/t/p/w1280/vfJFJPepRKapMd5G2ro7klIRysq.jpg',
   },
   {
     title: "Harry Potter and the Philosopher's Stone",
     year: '2001',
     poster:
-      'https://www.originalfilmart.com/cdn/shop/products/harry_potter_and_the_philosophers_stone_2001_australian_original_film_art_1600x.jpg?v=1568479585',
+      'https://image.tmdb.org/t/p/w1280/wuMc08IPKEatf9rnMNXvIDxqP4W.jpg',
+  },
+  {
+    title: 'Spirited Away',
+    year: '2001',
+    poster:
+      'https://image.tmdb.org/t/p/w1280/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg',
+  },
+  {
+    title: 'The Haunting of Hill House',
+    year: '2018',
+    poster:
+      'https://image.tmdb.org/t/p/w1280/nWPZb800NCGiDPNGsKCfY0w44Z2.jpg',
+  },
+  {
+    title: 'The Vampire Diaries',
+    year: '2009',
+    poster:
+      'https://image.tmdb.org/t/p/original/nxUfTJ0LnIVpMohncfodChyOBiz.jpg',
   },
 ]
 
-/* =========================================================
-   FAVOURITE READS
-========================================================= */
-
 const favouriteReads: Read[] = [
   {
-    title: 'If a birds falls in love with a fish, where will they live?',
+    title: 'if a birds falls in love with a fish, where will they live?',
     author: 'You had me at Hello',
     description:
       'A tender piece about love, incompatibility, and knowing when not to lose yourself.',
@@ -175,7 +179,7 @@ const favouriteReads: Read[] = [
   },
   {
     title:
-      'Nobody Will Ever Fully Understand You. That’s the Best News You’ll Read This Year.',
+      'nobody will ever fully understand you. that’s the best news you’ll read this year.',
     author: 'ixcarus',
     description:
       'On self-understanding, connection, and accepting that nobody can hold every part of us.',
@@ -183,7 +187,7 @@ const favouriteReads: Read[] = [
     url: 'https://ixcarus.substack.com/p/nobody-will-ever-fully-understand',
   },
   {
-    title: 'a little something worth reading',
+    title: 'the poetry and science behind neuroplasticity',
     author: 'SUBSTACK',
     description:
       'A little saved corner of the internet. Open it and see where the words take you.',
@@ -229,9 +233,7 @@ const displayNumber = (value: number | null): string =>
   value === null ? '—' : String(value)
 
 const renderStars = (rating?: number): string => {
-  if (rating === undefined || !Number.isFinite(rating)) {
-    return ''
-  }
+  if (rating === undefined || !Number.isFinite(rating)) return ''
 
   const safeRating = Math.max(0, Math.min(5, rating))
   const fullStars = Math.floor(safeRating)
@@ -250,14 +252,16 @@ const formatDate = (value: string): string => {
   const parsed = new Date(value)
 
   if (Number.isNaN(parsed.getTime())) {
-    return escapeHTML(value)
+    return value.toUpperCase()
   }
 
-  return parsed.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).toUpperCase()
+  return parsed
+    .toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+    .toUpperCase()
 }
 
 const stripHTML = (value: string): string => {
@@ -292,7 +296,6 @@ const renderPoster = (film: Film, className = ''): string => {
           `
           : ''
       }
-
       <div class="poster-fallback ${poster ? 'is-hidden' : ''}">
         <span>✿</span>
         <strong>${title}</strong>
@@ -308,7 +311,6 @@ const setConnectionStatus = (
   success: boolean,
 ): void => {
   const element = document.getElementById(id)
-
   if (!element) return
 
   element.textContent = message
@@ -321,7 +323,6 @@ const updateStat = (key: string, value: number | null): void => {
   )
 
   const number = card?.querySelector<HTMLElement>('[data-count]')
-
   if (!number) return
 
   number.textContent = displayNumber(value)
@@ -329,14 +330,13 @@ const updateStat = (key: string, value: number | null): void => {
 }
 
 /* =========================================================
-   FILM RENDERERS
+   RENDER FUNCTIONS
 ========================================================= */
 
 const renderTopFour = (): string =>
   topFour.map((film) => `
     <article class="film-card">
       ${renderPoster(film)}
-
       <div class="film-card-info">
         <h3>${escapeHTML(film.title)}</h3>
         <span>${escapeHTML(film.year)}</span>
@@ -403,7 +403,7 @@ const renderFavouriteReads = (): string =>
       rel="noopener noreferrer"
     >
       <div class="read-card-top">
-        <span>✿ A LITTLE FAVOURITE</span>
+        <span>✿</span>
         <span>↗</span>
       </div>
 
@@ -420,7 +420,7 @@ const renderFavouriteReads = (): string =>
       <p>${escapeHTML(read.description)}</p>
 
       <span class="read-card-bottom">
-        READ THIS ONE ↗
+        READ ↗
       </span>
     </a>
   `).join('')
@@ -477,10 +477,6 @@ const updateArticles = (): void => {
   if (shelf) shelf.innerHTML = renderFavouriteReads()
 }
 
-/* =========================================================
-   PROFILE STATISTICS
-========================================================= */
-
 const updateLetterboxdStats = (): void => {
   updateStat('moviesAllTime', profileStats.moviesAllTime)
   updateStat('moviesThisYear', profileStats.moviesThisYear)
@@ -489,16 +485,14 @@ const updateLetterboxdStats = (): void => {
 }
 
 /* =========================================================
-   LETTERBOXD FEED
+   LETTERBOXD API
 ========================================================= */
 
 const fetchLetterboxd = async (): Promise<void> => {
   try {
     const response = await fetch(LETTERBOXD_API, {
       cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
     })
 
     const data = await response.json() as LetterboxdResponse
@@ -574,16 +568,14 @@ const fetchLetterboxd = async (): Promise<void> => {
 }
 
 /* =========================================================
-   SUBSTACK FEED
+   SUBSTACK API
 ========================================================= */
 
 const fetchSubstack = async (): Promise<void> => {
   try {
     const response = await fetch(SUBSTACK_API, {
       cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
     })
 
     const data = await response.json() as SubstackResponse
@@ -639,7 +631,7 @@ const fetchSubstack = async (): Promise<void> => {
 }
 
 /* =========================================================
-   PAGE STRUCTURE
+   MAIN WEBSITE HTML
 ========================================================= */
 
 const currentYear = new Date().getFullYear()
@@ -650,11 +642,7 @@ app.innerHTML = `
     <header class="site-header">
       <div class="header-inner">
 
-        <a
-          class="site-logo"
-          href="#archive-top"
-          aria-label="The Archive home"
-        >
+        <a class="site-logo" href="#archive-top" aria-label="The Archive home">
           <span class="logo-mark">a.</span>
           <span>the archive</span>
           <span class="logo-sparkle">✿</span>
@@ -682,17 +670,31 @@ app.innerHTML = `
 
     <main class="page-content">
 
+      <!-- PROFILE -->
+
       <section class="profile-section" id="profile">
 
         <div class="profile-banner">
           <div class="banner-pattern"></div>
+
           <span class="banner-doodle doodle-one">✿</span>
           <span class="banner-doodle doodle-two">♡</span>
           <span class="banner-doodle doodle-three">✧</span>
 
           <span class="banner-label">A LITTLE COLLECTION OF EVERYTHING</span>
-          <span class="banner-title">little things, lovely stories.</span>
+          <span class="banner-title">a little universe.</span>
           <span class="banner-coordinate">a tiny corner of the internet ♡</span>
+
+          <button
+            class="stardust-trigger"
+            id="open-stardust"
+            type="button"
+            aria-label="Play Stardust Collector"
+            title="wanna play a game? ✦"
+          >
+            <span>✦</span>
+            <span class="sparkle-prompt">wanna play a game?</span>
+          </button>
         </div>
 
         <div class="profile-heading">
@@ -708,16 +710,14 @@ app.innerHTML = `
 
           <div class="profile-title">
             <span class="eyebrow">A PERSON WITH TOO MANY FAVOURITES ✿</span>
-            <h1>aria</h1>
+            <h1 class="aria-name">aria</h1>
             <p>collecting stories, films and little pieces of life.</p>
           </div>
 
         </div>
 
         <p class="profile-bio">
-          A small corner of the internet for the things I write,
-          the things I read, the films I watch and the thoughts
-          that refuse to leave my head.
+          A small corner of the internet for the things I write, the things I read, the films I watch and the thoughts that refuse to leave my head.
         </p>
 
         <div class="stats-grid" aria-label="Profile statistics">
@@ -730,7 +730,7 @@ app.innerHTML = `
 
           <div class="stat-card" data-stat="moviesThisYear">
             <strong data-count="91">91</strong>
-            <span>WATCHED IN 2026</span>
+            <span>WATCHED IN ${currentYear}</span>
             <small>♡ DISTINCT FILMS</small>
           </div>
 
@@ -753,7 +753,6 @@ app.innerHTML = `
           </div>
 
         </div>
-
       </section>
 
       <div class="page-note">
@@ -795,21 +794,18 @@ app.innerHTML = `
           <div class="substack-copy">
             <span class="eyebrow">MY LITTLE WRITING CORNER</span>
             <h3>little pieces of my mind.</h3>
+
             <p>
               Personal essays, random thoughts, little stories
               and words that needed somewhere to live.
             </p>
-            <a
-              href="${safeURL(substackURL)}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+
+            <a href="${safeURL(substackURL)}" target="_blank" rel="noopener noreferrer">
               COME READ WITH ME ↗
             </a>
           </div>
 
           <span class="substack-decoration">✿</span>
-
         </div>
 
         <div class="subsection-heading">
@@ -826,7 +822,6 @@ app.innerHTML = `
             <span class="eyebrow">A FEW THINGS I LOVE</span>
             <h3>favourite reads.</h3>
           </div>
-          <span>SCROLL SIDEWAYS →</span>
         </div>
 
         <div class="horizontal-shelf reads-shelf">
@@ -853,6 +848,7 @@ app.innerHTML = `
           <div>
             <span class="eyebrow">MY LETTERBOXD DIARY</span>
             <h3>films, feelings & everything in between.</h3>
+
             <p>
               A collection of stories I've watched, loved,
               rated and probably overthought.
@@ -860,13 +856,12 @@ app.innerHTML = `
           </div>
 
           <span class="lb-decoration">★★★★★</span>
-
         </div>
 
         <div class="subsection-heading top-ten-heading">
           <div>
             <span class="eyebrow">THE FOREVER FAVOURITES</span>
-            <h3>my top four.</h3>
+            <h3>my top five. plus one</h3>
           </div>
           <span>THESE HAVE MY HEART ♡</span>
         </div>
@@ -896,32 +891,19 @@ app.innerHTML = `
 
         <div class="film-shortcuts">
 
-          <a
-            href="${safeURL(letterboxdURL)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="${safeURL(letterboxdURL)}" target="_blank" rel="noopener noreferrer">
             FULL FILM DIARY ↗
           </a>
 
-          <a
-            href="${safeURL('https://letterboxd.com/ariaahhh/watchlist/')}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="${safeURL('https://letterboxd.com/ariaahhh/watchlist/')}" target="_blank" rel="noopener noreferrer">
             MY WATCHLIST ↗
           </a>
 
-          <a
-            href="${safeURL('https://letterboxd.com/ariaahhh/likes/')}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="${safeURL('https://letterboxd.com/ariaahhh/likes/')}" target="_blank" rel="noopener noreferrer">
             LIKED FILMS ↗
           </a>
 
         </div>
-
       </section>
 
       <!-- RANT ROOM -->
@@ -933,13 +915,15 @@ app.innerHTML = `
             <span class="section-index">03 / THE UNFILTERED CORNER ✿</span>
             <h2>the rant <em>room.</em></h2>
           </div>
+
           <span class="section-external">MY LITTLE BLOG</span>
         </div>
 
         <div class="rant-intro">
           <span class="rant-stamp">DEAR<br>DIARY</span>
+
           <div>
-            <h3>some thoughts deserve their own little home.</h3>
+            <h3>the things on my mind.</h3>
             <p>
               Personal notes, midnight thoughts, tiny observations,
               dramatic paragraphs and everything in between.
@@ -948,72 +932,12 @@ app.innerHTML = `
           </div>
         </div>
 
-        <div class="rant-editor">
-
-          <div class="editor-heading">
-            <span>A LITTLE NOTE TO THE UNIVERSE ✿</span>
-            <span id="rant-today"></span>
-          </div>
-
-          <div class="owner-login" id="owner-login">
-            <p>the writing desk is reserved for aria ♡</p>
-
-            <label for="rant-admin-token">OWNER ACCESS KEY</label>
-
-            <input
-              id="rant-admin-token"
-              type="password"
-              autocomplete="current-password"
-              placeholder="your private admin key"
-            >
-
-            <button id="rant-admin-unlock" type="button">
-              UNLOCK MY WRITING DESK ↗
-            </button>
-
-            <span id="rant-admin-status" aria-live="polite"></span>
-          </div>
-
-          <div class="owner-composer" id="owner-composer" hidden>
-
-            <div class="owner-composer-heading">
-              <span>WELCOME BACK, ARIA ♡</span>
-              <button id="rant-admin-lock" type="button">LOCK DESK</button>
-            </div>
-
-            <label for="rant-title">POST TITLE</label>
-            <input
-              id="rant-title"
-              type="text"
-              maxlength="100"
-              placeholder="give this little thought a title..."
-            >
-
-            <label for="rant-message">YOUR THOUGHTS</label>
-            <textarea
-              id="rant-message"
-              maxlength="5000"
-              placeholder="dear diary, i have something to say..."
-            ></textarea>
-
-            <div class="editor-bottom">
-              <span id="rant-character-count">0 / 5000</span>
-              <button id="submit-rant" type="button">
-                PUBLISH MY THOUGHT ↗
-              </button>
-            </div>
-
-            <p class="rant-feedback" id="rant-feedback" aria-live="polite"></p>
-
-          </div>
-
-        </div>
-
         <div class="subsection-heading rant-log-heading">
           <div>
             <span class="eyebrow">LITTLE PIECES OF MY MIND</span>
             <h3>the thought log.</h3>
           </div>
+
           <span>FROM MY DESK ♡</span>
         </div>
 
@@ -1026,7 +950,136 @@ app.innerHTML = `
 
       </section>
 
+      <!-- TINY GARDEN -->
+
+      <section class="content-section tiny-garden-section" id="tiny-garden">
+
+        <div class="section-heading">
+          <div>
+            <span class="section-index">A LITTLE PATCH OF PEACE ✿</span>
+            <h2>tiny <em>garden.</em></h2>
+          </div>
+
+          <span class="game-side-note">A LITTLE WATER GOES A LONG WAY</span>
+        </div>
+
+        <div class="garden-card">
+
+          <div class="garden-copy">
+            <span class="eyebrow">A QUIET LITTLE CORNER</span>
+            <h3>water a flower. watch it bloom.</h3>
+
+            <p>
+              A tiny garden with no tasks and no rush.
+              Pick a flower, give it a little water,
+              and watch it come alive.
+            </p>
+
+            <p class="garden-feedback" id="garden-feedback" aria-live="polite">
+              choose a flower and give it a drink ♡
+            </p>
+
+            <button
+              class="garden-water-button"
+              id="garden-water-button"
+              type="button"
+              disabled
+            >
+              ☁ WATER THIS FLOWER
+            </button>
+          </div>
+
+          <div class="garden-visual">
+
+            <div class="garden-sky">
+              <span class="garden-moon">☾</span>
+              <span class="garden-star garden-star-one">✦</span>
+              <span class="garden-star garden-star-two">✧</span>
+              <span class="garden-cloud">﹏</span>
+            </div>
+
+            <div class="garden-ground">
+
+              <div
+                class="garden-flower-grid"
+                id="garden-flower-grid"
+                aria-label="Choose a flower to water"
+              >
+                <button class="garden-flower" type="button" data-flower="0" aria-pressed="false"><span>🌷</span></button>
+                <button class="garden-flower" type="button" data-flower="1" aria-pressed="false"><span>🌼</span></button>
+                <button class="garden-flower" type="button" data-flower="2" aria-pressed="false"><span>🌸</span></button>
+                <button class="garden-flower" type="button" data-flower="3" aria-pressed="false"><span>🌻</span></button>
+                <button class="garden-flower" type="button" data-flower="4" aria-pressed="false"><span>🪻</span></button>
+                <button class="garden-flower" type="button" data-flower="5" aria-pressed="false"><span>🌺</span></button>
+              </div>
+
+            </div>
+
+            <div class="garden-water-status">
+              <span>✿</span>
+              <strong id="garden-water-count">0</strong>
+              little waterings
+            </div>
+
+          </div>
+        </div>
+      </section>
+
     </main>
+
+    <!-- STARDUST GAME MODAL -->
+
+    <div class="stardust-modal" id="stardust-modal" hidden>
+
+      <div class="stardust-backdrop" data-close-stardust></div>
+
+      <section
+        class="stardust-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stardust-title"
+      >
+
+        <button
+          class="stardust-close"
+          id="close-stardust"
+          type="button"
+          aria-label="Close game"
+        >
+          ×
+        </button>
+
+        <h2 id="stardust-title">little stardust collector.</h2>
+
+        <p class="stardust-instructions">
+          Catch the falling stars, hearts and flowers before they disappear.
+          You have 30 seconds. ♡
+        </p>
+
+        <div class="stardust-scorebar">
+          <span>✦ SCORE <strong id="stardust-score">0</strong></span>
+          <span>TIME <strong id="stardust-timer">30</strong></span>
+          <span>BEST <strong id="stardust-best">0</strong></span>
+        </div>
+
+        <div class="stardust-field" id="stardust-field">
+
+          <div class="stardust-start">
+            <span>✦</span>
+            <p>ready to collect a little magic?</p>
+            <button id="stardust-start" type="button">LET'S PLAY ↗</button>
+          </div>
+
+        </div>
+
+        <p class="stardust-result" id="stardust-result" aria-live="polite">
+          a little moment of magic, just for you.
+        </p>
+
+      </section>
+    </div>
+
+    <!-- FOOTER -->
 
     <footer class="site-footer">
 
@@ -1045,29 +1098,19 @@ app.innerHTML = `
       </div>
 
       <div class="footer-links">
-        <a
-          href="${safeURL(letterboxdURL)}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+
+        <a href="${safeURL(letterboxdURL)}" target="_blank" rel="noopener noreferrer">
           LETTERBOXD ↗
         </a>
 
-        <a
-          href="${safeURL(substackURL)}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="${safeURL(substackURL)}" target="_blank" rel="noopener noreferrer">
           SUBSTACK ↗
         </a>
 
-        <a
-          href="${safeURL(spotifyURL)}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="${safeURL(spotifyURL)}" target="_blank" rel="noopener noreferrer">
           SPOTIFY ↗
         </a>
+
       </div>
 
       <div class="footer-bottom">
@@ -1082,97 +1125,16 @@ app.innerHTML = `
 `
 
 /* =========================================================
-   INITIAL STATISTICS
+   INITIAL STATS
 ========================================================= */
 
 updateLetterboxdStats()
 
 /* =========================================================
-   RANT ROOM — OWNER-ONLY PUBLISHING
+   PUBLIC RANT ROOM
 ========================================================= */
 
-const rantMessage =
-  document.getElementById('rant-message') as HTMLTextAreaElement | null
-
-const rantTitle =
-  document.getElementById('rant-title') as HTMLInputElement | null
-
-const rantCount = document.getElementById('rant-character-count')
-const rantFeedback = document.getElementById('rant-feedback')
 const rantList = document.getElementById('rant-list')
-const submitRant = document.getElementById('submit-rant')
-const rantToday = document.getElementById('rant-today')
-
-const adminTokenInput =
-  document.getElementById('rant-admin-token') as HTMLInputElement | null
-
-const adminUnlock = document.getElementById('rant-admin-unlock')
-const adminLock = document.getElementById('rant-admin-lock')
-const adminStatus = document.getElementById('rant-admin-status')
-
-const ownerLogin = document.getElementById('owner-login')
-const ownerComposer = document.getElementById('owner-composer')
-
-/* =========================================================
-   ADMIN SESSION
-========================================================= */
-
-const getAdminToken = (): string => {
-  try {
-    return sessionStorage.getItem(RANT_ADMIN_SESSION) || ''
-  } catch {
-    return ''
-  }
-}
-
-const setAdminToken = (token: string): void => {
-  try {
-    sessionStorage.setItem(RANT_ADMIN_SESSION, token)
-  } catch {
-    setAdminStatus('Your browser could not save the session.')
-  }
-}
-
-const clearAdminToken = (): void => {
-  try {
-    sessionStorage.removeItem(RANT_ADMIN_SESSION)
-  } catch {
-    // Session storage is unavailable.
-  }
-}
-
-const isAdminUnlocked = (): boolean => Boolean(getAdminToken())
-
-const setRantFeedback = (message: string): void => {
-  if (rantFeedback) rantFeedback.textContent = message
-}
-
-const setAdminStatus = (message: string): void => {
-  if (adminStatus) adminStatus.textContent = message
-}
-
-const updateOwnerView = (): void => {
-  const unlocked = isAdminUnlocked()
-
-  if (ownerLogin) ownerLogin.hidden = unlocked
-  if (ownerComposer) ownerComposer.hidden = !unlocked
-}
-
-/* =========================================================
-   RANT DATE
-========================================================= */
-
-if (rantToday) {
-  rantToday.textContent = new Date().toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).toUpperCase()
-}
-
-/* =========================================================
-   RANT RENDERING
-========================================================= */
 
 const renderRants = (): void => {
   if (!rantList) return
@@ -1196,292 +1158,410 @@ const renderRants = (): void => {
           <time>${escapeHTML(formatDate(rant.date))}</time>
         </div>
 
-        ${
-          title
-            ? `<h3>${escapeHTML(title)}</h3>`
-            : ''
-        }
+        ${title ? `<h3>${escapeHTML(title)}</h3>` : ''}
 
         <p>${escapeHTML(rant.message).replace(/\n/g, '<br>')}</p>
-
-        ${
-          isAdminUnlocked()
-            ? `
-              <button
-                type="button"
-                class="delete-rant"
-                data-delete-rant="${escapeHTML(rant.id)}"
-              >
-                DELETE ENTRY ×
-              </button>
-            `
-            : ''
-        }
 
       </article>
     `
   }).join('')
 }
 
-/* =========================================================
-   LOAD PUBLIC RANTS
-========================================================= */
-
 const loadRants = async (): Promise<void> => {
   try {
     const response = await fetch(RANTS_API, {
       cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
     })
 
     const data = await response.json() as RantsResponse
 
-    if (!response.ok || data.ok === false) {
+    if (!response.ok || data.ok === false || data.error) {
       throw new Error(
         data.details || data.error || 'Unable to load thoughts',
       )
     }
 
     rants = Array.isArray(data.rants) ? data.rants : []
-
     renderRants()
   } catch (error) {
     console.error('Rant loading failed:', error)
-
-    if (rantList) {
-      rantList.innerHTML = emptyState(
-        'the thought room is resting.',
-        'Please try again in a little while.',
-      )
-    }
   }
 }
 
-/* =========================================================
-   CHARACTER COUNTER
-========================================================= */
-
-rantMessage?.addEventListener('input', () => {
-  if (rantCount && rantMessage) {
-    rantCount.textContent = `${rantMessage.value.length} / 5000`
-  }
-})
+void loadRants()
 
 /* =========================================================
-   ADMIN UNLOCK
+   LITTLE STARDUST COLLECTOR
 ========================================================= */
 
-adminUnlock?.addEventListener('click', async () => {
-  const token = adminTokenInput?.value.trim() || ''
+const stardustModal = document.getElementById('stardust-modal')
+const stardustField = document.getElementById('stardust-field')
+const stardustStart = document.getElementById('stardust-start')
+const stardustScore = document.getElementById('stardust-score')
+const stardustTimer = document.getElementById('stardust-timer')
+const stardustBest = document.getElementById('stardust-best')
+const stardustResult = document.getElementById('stardust-result')
 
-  if (!token) {
-    setAdminStatus('Enter your owner key first.')
-    return
-  }
+const openStardust = document.getElementById('open-stardust')
+const closeStardust = document.getElementById('close-stardust')
 
-  if (adminUnlock instanceof HTMLButtonElement) {
-    adminUnlock.disabled = true
-    adminUnlock.textContent = 'CHECKING...'
-  }
+let stardustPoints = 0
+let stardustSeconds = 30
+let stardustSpawnTimer = 0
+let stardustClockTimer = 0
+let stardustRunning = false
 
+let stardustOpener: HTMLElement | null = null
+
+const getStardustBest = (): number => {
   try {
-    const response = await fetch(RANTS_API, {
-      method: 'GET',
-      cache: 'no-store',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
-    })
-
-    const data = await response.json() as RantsResponse
-
-    if (!response.ok || data.ok === false) {
-      throw new Error(
-        data.details || data.error || 'Invalid owner key',
-      )
-    }
-
-    setAdminToken(token)
-
-    rants = Array.isArray(data.rants) ? data.rants : rants
-
-    if (adminTokenInput) {
-      adminTokenInput.value = ''
-    }
-
-    updateOwnerView()
-    renderRants()
-
-    setAdminStatus('Your writing desk is ready ♡')
+    const value = Number(localStorage.getItem('aria-stardust-best') || 0)
+    return Number.isFinite(value) ? Math.max(0, value) : 0
   } catch {
-    clearAdminToken()
-    updateOwnerView()
-
-    setAdminStatus('That key did not work. Try again.')
-  } finally {
-    if (adminUnlock instanceof HTMLButtonElement) {
-      adminUnlock.disabled = false
-      adminUnlock.textContent = 'UNLOCK MY WRITING DESK ↗'
-    }
+    return 0
   }
-})
+}
 
-/* =========================================================
-   ADMIN LOCK
-========================================================= */
-
-adminLock?.addEventListener('click', () => {
-  clearAdminToken()
-  updateOwnerView()
-  renderRants()
-
-  setAdminStatus('Your writing desk is locked.')
-})
-
-/* =========================================================
-   PUBLISH RANT
-========================================================= */
-
-submitRant?.addEventListener('click', async () => {
-  if (rantRequestInProgress) return
-
-  if (!isAdminUnlocked()) {
-    setRantFeedback('Unlock your writing desk first ♡')
-    return
+const updateStardustScore = (): void => {
+  if (stardustScore) {
+    stardustScore.textContent = String(stardustPoints)
   }
 
-  const title = rantTitle?.value.trim() || ''
-  const message = rantMessage?.value.trim() || ''
-
-  if (!title) {
-    setRantFeedback('Give your little thought a title first ♡')
-    return
+  if (stardustTimer) {
+    stardustTimer.textContent = String(stardustSeconds)
   }
 
-  if (!message) {
-    setRantFeedback('A little thought needs some words first ♡')
-    return
+  if (stardustBest) {
+    stardustBest.textContent = String(getStardustBest())
   }
+}
 
-  if (title.length > 100 || message.length > 5000) {
-    setRantFeedback('That post is a little too long.')
-    return
-  }
+const clearStardustTimers = (): void => {
+  window.clearInterval(stardustSpawnTimer)
+  window.clearInterval(stardustClockTimer)
 
-  rantRequestInProgress = true
+  stardustSpawnTimer = 0
+  stardustClockTimer = 0
+}
 
-  if (submitRant instanceof HTMLButtonElement) {
-    submitRant.disabled = true
-    submitRant.textContent = 'PUBLISHING...'
-  }
+const finishStardust = (): void => {
+  if (!stardustRunning) return
+
+  stardustRunning = false
+  clearStardustTimers()
+
+  const best = Math.max(stardustPoints, getStardustBest())
 
   try {
-    const response = await fetch(RANTS_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${getAdminToken()}`,
-      },
-      body: JSON.stringify({
-        name: 'aria',
-        title,
-        message,
-      }),
-    })
-
-    const data = await response.json() as RantsResponse
-
-    if (!response.ok || data.ok === false) {
-      throw new Error(
-        data.details || data.error || 'Could not publish this thought',
-      )
-    }
-
-    if (rantTitle) rantTitle.value = ''
-    if (rantMessage) rantMessage.value = ''
-
-    if (rantCount) {
-      rantCount.textContent = '0 / 5000'
-    }
-
-    setRantFeedback('Your little thought has found its place ♡')
-
-    await loadRants()
-  } catch (error) {
-    setRantFeedback(
-      error instanceof Error
-        ? error.message
-        : 'Could not publish this thought. Please try again.',
-    )
-  } finally {
-    rantRequestInProgress = false
-
-    if (submitRant instanceof HTMLButtonElement) {
-      submitRant.disabled = false
-      submitRant.textContent = 'PUBLISH MY THOUGHT ↗'
-    }
+    localStorage.setItem('aria-stardust-best', String(best))
+  } catch {
+    // The game still works if local storage is unavailable.
   }
-})
 
-/* =========================================================
-   DELETE RANT
-========================================================= */
+  stardustField
+    ?.querySelectorAll('.falling-treasure')
+    .forEach((item) => item.remove())
 
-rantList?.addEventListener('click', async (event) => {
+  const startPanel =
+    stardustField?.querySelector<HTMLElement>('.stardust-start')
+
+  if (startPanel) startPanel.hidden = false
+
+  const message =
+    stardustPoints >= 30
+      ? 'you caught a whole pocketful of magic. the stars adore you ✨'
+      : stardustPoints >= 15
+        ? 'a lovely little collection. you have a talent for finding magic ♡'
+        : stardustPoints >= 5
+          ? 'a few little wishes found their way to you. keep looking ✿'
+          : 'even one tiny star is worth catching. thanks for stopping by ♡'
+
+  if (stardustResult) {
+    stardustResult.textContent =
+      `${message} · ${stardustPoints} points`
+  }
+
+  if (stardustStart) {
+    stardustStart.textContent = 'PLAY AGAIN ↻'
+    stardustStart.hidden = false
+  }
+
+  updateStardustScore()
+}
+
+const spawnStardust = (): void => {
+  if (!stardustField || !stardustRunning) return
+
+  const treasures = [
+    { icon: '✦', points: 1, kind: 'star' },
+    { icon: '♡', points: 2, kind: 'heart' },
+    { icon: '✿', points: 3, kind: 'flower' },
+  ]
+
+  const treasure =
+    treasures[Math.floor(Math.random() * treasures.length)]
+
+  const item = document.createElement('button')
+
+  item.type = 'button'
+  item.className = `falling-treasure treasure-${treasure.kind}`
+  item.textContent = treasure.icon
+  item.dataset.points = String(treasure.points)
+  item.setAttribute('aria-label', `Catch ${treasure.kind}`)
+  item.style.left = `${5 + Math.random() * 86}%`
+
+  item.addEventListener(
+    'animationend',
+    () => item.remove(),
+    { once: true },
+  )
+
+  stardustField.append(item)
+}
+
+const startStardust = (): void => {
+  if (!stardustField || !stardustModal || stardustModal.hidden) return
+
+  clearStardustTimers()
+
+  stardustField
+    .querySelectorAll('.falling-treasure')
+    .forEach((item) => item.remove())
+
+  const startPanel =
+    stardustField.querySelector<HTMLElement>('.stardust-start')
+
+  if (startPanel) startPanel.hidden = true
+
+  stardustPoints = 0
+  stardustSeconds = 30
+  stardustRunning = true
+
+  if (stardustResult) {
+    stardustResult.textContent = 'catch as many as you can ♡'
+  }
+
+  if (stardustStart) {
+    stardustStart.hidden = true
+  }
+
+  updateStardustScore()
+  spawnStardust()
+
+  stardustSpawnTimer = window.setInterval(spawnStardust, 520)
+
+  stardustClockTimer = window.setInterval(() => {
+    if (!stardustRunning) return
+
+    stardustSeconds -= 1
+    updateStardustScore()
+
+    if (stardustSeconds <= 0) {
+      finishStardust()
+    }
+  }, 1000)
+}
+
+const openStardustGame = (): void => {
+  if (!stardustModal) return
+
+  stardustOpener =
+    openStardust instanceof HTMLElement ? openStardust : null
+
+  stardustModal.hidden = false
+  updateStardustScore()
+
+  window.setTimeout(() => {
+    closeStardust?.focus()
+  }, 50)
+}
+
+const closeStardustGame = (): void => {
+  clearStardustTimers()
+  stardustRunning = false
+
+  stardustField
+    ?.querySelectorAll('.falling-treasure')
+    .forEach((item) => item.remove())
+
+  if (stardustModal) {
+    stardustModal.hidden = true
+  }
+
+  stardustOpener?.focus()
+}
+
+openStardust?.addEventListener('click', openStardustGame)
+closeStardust?.addEventListener('click', closeStardustGame)
+
+stardustModal
+  ?.querySelectorAll('[data-close-stardust]')
+  .forEach((element) => {
+    element.addEventListener('click', closeStardustGame)
+  })
+
+stardustStart?.addEventListener('click', startStardust)
+
+stardustField?.addEventListener('click', (event) => {
   const target = event.target
 
   if (!(target instanceof HTMLElement)) return
-  if (!isAdminUnlocked()) return
+  if (!stardustRunning) return
 
-  const button = target.closest<HTMLButtonElement>(
-    '[data-delete-rant]',
+  const treasure = target.closest<HTMLButtonElement>(
+    '.falling-treasure',
   )
 
-  if (!button) return
+  if (!treasure) return
 
-  const id = button.dataset.deleteRant
+  stardustPoints += Number(treasure.dataset.points || 1)
 
-  if (!id) return
+  treasure.remove()
+  updateStardustScore()
+})
 
-  if (!window.confirm('Delete this thought permanently?')) {
+/* =========================================================
+   STARDUST KEYBOARD ACCESSIBILITY
+========================================================= */
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return
+  if (!stardustModal || stardustModal.hidden) return
+
+  closeStardustGame()
+})
+
+updateStardustScore()
+
+/* =========================================================
+   LITTLE WATERING GARDEN
+========================================================= */
+
+const GARDEN_STORAGE_KEY = 'aria-little-garden-waterings-v1'
+
+const gardenGrid = document.getElementById('garden-flower-grid')
+
+const gardenWaterButton =
+  document.getElementById('garden-water-button') as HTMLButtonElement | null
+
+const gardenFeedback = document.getElementById('garden-feedback')
+const gardenWaterCount = document.getElementById('garden-water-count')
+
+let selectedGardenFlower: number | null = null
+let gardenWaterings = 0
+
+try {
+  const storedWaterings = Number(
+    localStorage.getItem(GARDEN_STORAGE_KEY) || 0,
+  )
+
+  gardenWaterings =
+    Number.isFinite(storedWaterings)
+      ? Math.max(0, Math.floor(storedWaterings))
+      : 0
+} catch {
+  gardenWaterings = 0
+}
+
+const setGardenFeedback = (message: string): void => {
+  if (gardenFeedback) {
+    gardenFeedback.textContent = message
+  }
+}
+
+const updateGardenCount = (): void => {
+  if (gardenWaterCount) {
+    gardenWaterCount.textContent = String(gardenWaterings)
+  }
+}
+
+gardenGrid?.addEventListener('click', (event) => {
+  const target = event.target
+
+  if (!(target instanceof HTMLElement)) return
+
+  const flower = target.closest<HTMLButtonElement>('[data-flower]')
+  if (!flower) return
+
+  const flowerIndex = Number(flower.dataset.flower)
+
+  if (
+    !Number.isInteger(flowerIndex) ||
+    flowerIndex < 0 ||
+    flowerIndex > 5
+  ) {
     return
   }
 
-  try {
-    const response = await fetch(RANTS_API, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${getAdminToken()}`,
-      },
-      body: JSON.stringify({ id }),
+  selectedGardenFlower = flowerIndex
+
+  gardenGrid
+    .querySelectorAll<HTMLButtonElement>('.garden-flower')
+    .forEach((item) => {
+      const selected = item === flower
+
+      item.classList.toggle('is-selected', selected)
+      item.setAttribute('aria-pressed', String(selected))
     })
 
-    const data = await response.json() as RantsResponse
-
-    if (!response.ok || data.ok === false) {
-      throw new Error(
-        data.details || data.error || 'Unable to delete this thought',
-      )
-    }
-
-    setRantFeedback('Thought removed ♡')
-
-    await loadRants()
-  } catch (error) {
-    setRantFeedback(
-      error instanceof Error
-        ? error.message
-        : 'Could not delete this thought.',
-    )
+  if (gardenWaterButton) {
+    gardenWaterButton.disabled = false
   }
+
+  setGardenFeedback('this little flower is ready for a drink ♡')
 })
 
-updateOwnerView()
-void loadRants()
+gardenWaterButton?.addEventListener('click', () => {
+  if (selectedGardenFlower === null || !gardenGrid) return
+
+  const flower = gardenGrid.querySelector<HTMLButtonElement>(
+    `[data-flower="${selectedGardenFlower}"]`,
+  )
+
+  if (!flower) return
+
+  flower.classList.remove('is-watered')
+
+  // Restart the bloom animation.
+  void flower.offsetWidth
+
+  flower.classList.add('is-watered')
+
+  // Remove an earlier splash before creating another one.
+  flower.querySelector('.garden-splash')?.remove()
+
+  const splash = document.createElement('span')
+
+  splash.className = 'garden-splash'
+  splash.textContent = '💧'
+  splash.setAttribute('aria-hidden', 'true')
+
+  flower.append(splash)
+
+  window.setTimeout(() => {
+    splash.remove()
+  }, 1100)
+
+  gardenWaterings += 1
+
+  try {
+    localStorage.setItem(
+      GARDEN_STORAGE_KEY,
+      String(gardenWaterings),
+    )
+  } catch {
+    // Watering still works when browser storage is unavailable.
+  }
+
+  updateGardenCount()
+
+  setGardenFeedback(
+    'a little drink for a little flower. look at it bloom! ✿',
+  )
+})
+
+updateGardenCount()
 
 /* =========================================================
    MOBILE NAVIGATION
@@ -1489,6 +1569,12 @@ void loadRants()
 
 const mobileMenu = document.getElementById('mobile-menu')
 const mainNav = document.getElementById('main-nav')
+
+const closeMobileMenu = (): void => {
+  mainNav?.classList.remove('nav-open')
+  mobileMenu?.classList.remove('menu-open')
+  mobileMenu?.setAttribute('aria-expanded', 'false')
+}
 
 mobileMenu?.addEventListener('click', () => {
   const isOpen = mainNav?.classList.toggle('nav-open') ?? false
@@ -1498,15 +1584,17 @@ mobileMenu?.addEventListener('click', () => {
 })
 
 mainNav?.querySelectorAll('a').forEach((link) => {
-  link.addEventListener('click', () => {
-    mainNav.classList.remove('nav-open')
-    mobileMenu?.classList.remove('menu-open')
-    mobileMenu?.setAttribute('aria-expanded', 'false')
-  })
+  link.addEventListener('click', closeMobileMenu)
+})
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closeMobileMenu()
+  }
 })
 
 /* =========================================================
-   SCROLL EFFECTS
+   ACTIVE NAVIGATION + REVEAL ANIMATIONS
 ========================================================= */
 
 const navLinks = document.querySelectorAll<HTMLAnchorElement>(
@@ -1515,6 +1603,10 @@ const navLinks = document.querySelectorAll<HTMLAnchorElement>(
 
 const pageSections = document.querySelectorAll<HTMLElement>(
   '#reads, #films, #rants',
+)
+
+const revealElements = document.querySelectorAll<HTMLElement>(
+  '.content-section, .profile-section, .page-note',
 )
 
 if ('IntersectionObserver' in window) {
@@ -1554,21 +1646,13 @@ if ('IntersectionObserver' in window) {
     },
   )
 
-  document
-    .querySelectorAll(
-      '.content-section, .profile-section, .page-note',
-    )
-    .forEach((element) => {
-      revealObserver.observe(element)
-    })
+  revealElements.forEach((element) => {
+    revealObserver.observe(element)
+  })
 } else {
-  document
-    .querySelectorAll(
-      '.content-section, .profile-section, .page-note',
-    )
-    .forEach((element) => {
-      element.classList.add('is-visible')
-    })
+  revealElements.forEach((element) => {
+    element.classList.add('is-visible')
+  })
 }
 
 /* =========================================================
@@ -1599,6 +1683,12 @@ document
       initialScroll = shelf.scrollLeft
 
       shelf.classList.add('is-dragging')
+
+      try {
+        shelf.setPointerCapture(event.pointerId)
+      } catch {
+        // Pointer capture is optional.
+      }
     })
 
     shelf.addEventListener('pointermove', (event) => {
@@ -1656,7 +1746,7 @@ window.addEventListener('focus', () => {
 })
 
 /* =========================================================
-   READY
+   PAGE READY
 ========================================================= */
 
 document.documentElement.classList.add('archive-ready')
