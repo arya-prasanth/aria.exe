@@ -20,6 +20,7 @@ type DiaryItem = {
 }
 
 const USERNAME = 'ariaahhh'
+
 const FEED_URL = `https://letterboxd.com/${USERNAME}/rss/`
 const PROFILE_URL = `https://letterboxd.com/${USERNAME}/`
 
@@ -32,11 +33,11 @@ function decodeXml(value: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
     .replace(/&#39;/g, "'")
-    .replace(/&#(\d+);/g, (_, n: string) =>
-      String.fromCodePoint(Number(n)),
+    .replace(/&#(\d+);/g, (_, number: string) =>
+      String.fromCodePoint(Number(number)),
     )
-    .replace(/&#x([\da-f]+);/gi, (_, n: string) =>
-      String.fromCodePoint(parseInt(n, 16)),
+    .replace(/&#x([\da-f]+);/gi, (_, number: string) =>
+      String.fromCodePoint(parseInt(number, 16)),
     )
     .trim()
 }
@@ -44,9 +45,13 @@ function decodeXml(value: string): string {
 function getTag(item: string, tagName: string): string {
   const escaped = tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+  const tagPattern = tagName.includes(':')
+    ? escaped
+    : `(?:[\\w.-]+:)?${escaped}`
+
   const match = item.match(
     new RegExp(
-      `<(?:[\\w.-]+:)?${escaped}\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?${escaped}\\s*>`,
+      `<${tagPattern}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tagPattern}\\s*>`,
       'i',
     ),
   )
@@ -90,6 +95,7 @@ function parseDiary(xml: string): DiaryItem[] {
         'Untitled film'
 
       const yearValue = getTag(item, 'filmYear')
+
       const date =
         getTag(item, 'watchedDate') ||
         getTag(item, 'pubDate') ||
@@ -104,8 +110,6 @@ function parseDiary(xml: string): DiaryItem[] {
         ''
 
       const link = getTag(item, 'link')
-      const review = stripHtml(getTag(item, 'description'))
-
       const isList = guid.includes('letterboxd-list-')
 
       if (isList) return null
@@ -134,6 +138,7 @@ export default async function handler(
 ) {
   if (req.method && req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
+
     return res.status(405).json({
       ok: false,
       error: 'Method not allowed',
@@ -157,7 +162,7 @@ export default async function handler(
 
     if (!/<rss\b/i.test(xml) || !/<item\b/i.test(xml)) {
       throw new Error(
-        'Letterboxd did not return a valid RSS feed. The profile may be temporarily blocked.',
+        'Letterboxd did not return a valid RSS feed. The profile may be temporarily unavailable.',
       )
     }
 
@@ -167,6 +172,7 @@ export default async function handler(
       'Cache-Control',
       'public, s-maxage=900, stale-while-revalidate=3600',
     )
+
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
 
     return res.status(200).json({

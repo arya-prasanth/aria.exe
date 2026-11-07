@@ -18,6 +18,7 @@ type SubstackPost = {
 }
 
 const PUBLICATION = 'aryaahhh'
+
 const FEED_URL = `https://${PUBLICATION}.substack.com/feed`
 const PROFILE_URL = `https://substack.com/@${PUBLICATION}`
 const PUBLICATION_URL = `https://${PUBLICATION}.substack.com`
@@ -31,11 +32,11 @@ function decodeXml(value: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
     .replace(/&#39;/g, "'")
-    .replace(/&#(\d+);/g, (_, n: string) =>
-      String.fromCodePoint(Number(n)),
+    .replace(/&#(\d+);/g, (_, number: string) =>
+      String.fromCodePoint(Number(number)),
     )
-    .replace(/&#x([\da-f]+);/gi, (_, n: string) =>
-      String.fromCodePoint(parseInt(n, 16)),
+    .replace(/&#x([\da-f]+);/gi, (_, number: string) =>
+      String.fromCodePoint(parseInt(number, 16)),
     )
     .trim()
 }
@@ -43,9 +44,13 @@ function decodeXml(value: string): string {
 function getTag(item: string, tagName: string): string {
   const escaped = tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+  const tagPattern = tagName.includes(':')
+    ? escaped
+    : `(?:[\\w.-]+:)?${escaped}`
+
   const match = item.match(
     new RegExp(
-      `<${escaped}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${escaped}\\s*>`,
+      `<${tagPattern}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tagPattern}\\s*>`,
       'i',
     ),
   )
@@ -121,6 +126,7 @@ export default async function handler(
 ) {
   if (req.method && req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
+
     return res.status(405).json({
       ok: false,
       error: 'Method not allowed',
@@ -152,6 +158,7 @@ export default async function handler(
       'Cache-Control',
       'public, s-maxage=900, stale-while-revalidate=3600',
     )
+
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
 
     return res.status(200).json({

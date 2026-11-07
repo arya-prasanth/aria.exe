@@ -2,31 +2,31 @@ import './archive.css'
 
 const app = document.querySelector<HTMLElement>('#archive-app')
 
-if (!app) {
-  throw new Error('Archive app element not found')
-}
+if (!app) throw new Error('Archive app element not found')
 
 /* =========================================================
-   PROFILE & LIVE FEED CONFIGURATION
+   CONFIGURATION
 ========================================================= */
 
 const letterboxdURL = 'https://boxd.it/iuv0p'
 const substackURL = 'https://substack.com/@aryaahhh'
+const spotifyURL =
+  'https://open.spotify.com/user/snmtm82rsdg0jo7z8nnj32623?si=0503bca6ab054f8e'
 
 const LETTERBOXD_API = '/api/letterboxd'
 const SUBSTACK_API = '/api/substack'
+const RANTS_API = '/api/rants'
 
 const REFRESH_INTERVAL = 5 * 60 * 1000
+const RANT_ADMIN_SESSION = 'aria-rant-admin-session'
 
-// Last figures personally verified on 06 November 2026.
-// These are snapshots, NOT live totals from the RSS feed.
+const MAIN_PROFILE_IMAGE = '/images/aria-profile.jpg'
+const SUBSTACK_PROFILE_IMAGE = '/images/substack-profile.jpg'
 
 const letterboxdSnapshot = {
   moviesAllTime: 861,
   moviesThisYear: 91,
   likedMovies: 27,
-  watchlist: null as number | null,
-  verifiedAt: '06 NOV 2026',
 }
 
 /* =========================================================
@@ -36,10 +36,8 @@ const letterboxdSnapshot = {
 type Film = {
   title: string
   year: string
-  director?: string
   poster: string
   rating?: number
-  note?: string
   url?: string
 }
 
@@ -52,7 +50,7 @@ type Read = {
   title: string
   author: string
   description: string
-  category?: string
+  category: string
   url: string
 }
 
@@ -61,19 +59,19 @@ type Article = {
   description: string
   date: string
   url: string
-  image?: string
 }
 
 type Rant = {
-  id: number
+  id: string
   name: string
+  title?: string
   message: string
   date: string
+  owner?: boolean
 }
 
 type LetterboxdResponse = {
   ok?: boolean
-  count?: number
   diary?: Array<{
     id?: string
     title?: string
@@ -84,13 +82,13 @@ type LetterboxdResponse = {
     liked?: boolean
     image?: string
   }>
+  watchlist?: number | null
   error?: string
   details?: string
 }
 
 type SubstackResponse = {
   ok?: boolean
-  count?: number
   posts?: Array<{
     id?: string
     title?: string
@@ -103,64 +101,104 @@ type SubstackResponse = {
   details?: string
 }
 
+type RantsResponse = {
+  ok?: boolean
+  rants?: Rant[]
+  error?: string
+  details?: string
+}
+
 /* =========================================================
-   CONTENT
+   STATE
 ========================================================= */
 
 let diaryEntries: DiaryEntry[] = []
 let articles: Article[] = []
+let rants: Rant[] = []
 
 let letterboxdLoaded = false
 let substackLoaded = false
 let refreshInProgress = false
-
-let currentDiaryFilter: 'all' | 'five' | 'recent' = 'all'
+let rantRequestInProgress = false
 
 const profileStats = {
   moviesAllTime: letterboxdSnapshot.moviesAllTime as number | null,
   moviesThisYear: letterboxdSnapshot.moviesThisYear as number | null,
-  watchlist: letterboxdSnapshot.watchlist,
+  watchlist: null as number | null,
   likedMovies: letterboxdSnapshot.likedMovies as number | null,
   substackReads: null as number | null,
 }
 
-// Your confirmed Letterboxd top four, in the exact order supplied.
+/* =========================================================
+   FAVOURITE FILMS
+========================================================= */
 
-const topTen: Film[] = [
+const topFour: Film[] = [
   {
     title: 'Past Lives',
     year: '2023',
-    director: 'Celine Song',
-    poster: '',
-    note: 'Some people stay with us.',
+    poster:
+      'https://dx35vtwkllhj9.cloudfront.net/a24films/past-lives/images/regions/us/onesheet.jpg',
   },
   {
     title: 'Your Name',
     year: '2016',
-    director: 'Makoto Shinkai',
-    poster: '',
-    note: 'A story written in the stars.',
+    poster:
+      'https://cdn.posteritati.com/posters/000/000/049/033/your-name-md-web.jpg',
   },
   {
     title: 'Spirited Away',
     year: '2001',
-    director: 'Hayao Miyazaki',
-    poster: '',
-    note: 'A world worth getting lost in.',
+    poster:
+      'https://baseec-img-mng.akamaized.net/images/item/origin/05e4ce286f475a0e81f120d1590ddf01.jpg?im=Resize%2Cwidth%3D1200%2Ctype%3Dnormal&imformat=generic&q=90',
   },
   {
     title: "Harry Potter and the Philosopher's Stone",
     year: '2001',
-    director: 'Chris Columbus',
-    poster: '',
-    note: 'A little bit of magic.',
+    poster:
+      'https://www.originalfilmart.com/cdn/shop/products/harry_potter_and_the_philosophers_stone_2001_australian_original_film_art_1600x.jpg?v=1568479585',
   },
 ]
 
-// Add your hand-picked articles here if you want.
-// Live Substack posts are displayed separately.
+/* =========================================================
+   FAVOURITE READS
+========================================================= */
 
-const favouriteReads: Read[] = []
+const favouriteReads: Read[] = [
+  {
+    title: 'If a birds falls in love with a fish, where will they live?',
+    author: 'You had me at Hello',
+    description:
+      'A tender piece about love, incompatibility, and knowing when not to lose yourself.',
+    category: 'LOVE & LIFE',
+    url: 'https://seizei.substack.com/p/if-a-birds-falls-in-love-with-a-fish',
+  },
+  {
+    title:
+      'Nobody Will Ever Fully Understand You. That’s the Best News You’ll Read This Year.',
+    author: 'ixcarus',
+    description:
+      'On self-understanding, connection, and accepting that nobody can hold every part of us.',
+    category: 'SELF-DISCOVERY',
+    url: 'https://ixcarus.substack.com/p/nobody-will-ever-fully-understand',
+  },
+  {
+    title: 'a little something worth reading',
+    author: 'SUBSTACK',
+    description:
+      'A little saved corner of the internet. Open it and see where the words take you.',
+    category: 'LITTLE DISCOVERIES',
+    url: 'https://substack.com/home/post/p-211701002',
+  },
+  {
+    title: 'unrot your brain',
+    author: 'Kylee · plum pits',
+    description:
+      'A reminder to reclaim curiosity, attention, and the joy of thinking for yourself.',
+    category: 'MIND & CURIOSITY',
+    url: 'https://plumpits.substack.com/p/unrot-your-brain',
+  },
+]
 
 /* =========================================================
    HELPERS
@@ -192,28 +230,24 @@ const displayNumber = (value: number | null): string =>
 
 const renderStars = (rating?: number): string => {
   if (rating === undefined || !Number.isFinite(rating)) {
-    return 'NOT RATED'
+    return ''
   }
 
   const safeRating = Math.max(0, Math.min(5, rating))
   const fullStars = Math.floor(safeRating)
-  const hasHalfStar = safeRating % 1 >= 0.5
+  const halfStar = safeRating % 1 >= 0.5
 
   return (
     '★'.repeat(fullStars) +
-    (hasHalfStar ? '½' : '') +
-    '☆'.repeat(5 - fullStars - (hasHalfStar ? 1 : 0))
+    (halfStar ? '½' : '') +
+    '☆'.repeat(5 - fullStars - (halfStar ? 1 : 0))
   )
 }
 
 const formatDate = (value: string): string => {
-  if (!value) return 'DATE NOT PROVIDED'
+  if (!value) return 'DATE UNKNOWN'
 
-  const direct = new Date(value)
-
-  const parsed = Number.isNaN(direct.getTime())
-    ? new Date(value.slice(0, 10) + 'T12:00:00')
-    : direct
+  const parsed = new Date(value)
 
   if (Number.isNaN(parsed.getTime())) {
     return escapeHTML(value)
@@ -229,13 +263,12 @@ const formatDate = (value: string): string => {
 const stripHTML = (value: string): string => {
   const element = document.createElement('div')
   element.innerHTML = value
-
   return element.textContent?.trim() || ''
 }
 
 const emptyState = (message: string, detail: string): string => `
   <div class="empty-state">
-    <span class="empty-state-icon">◎</span>
+    <span class="empty-state-icon">✿</span>
     <h3>${escapeHTML(message)}</h3>
     <p>${escapeHTML(detail)}</p>
   </div>
@@ -245,28 +278,23 @@ const renderPoster = (film: Film, className = ''): string => {
   const title = escapeHTML(film.title)
   const poster = film.poster.trim()
 
-  if (poster) {
-    return `
-      <div class="poster-frame ${className}">
-        <img
-          src="${safeURL(poster)}"
-          alt="${title} poster"
-          loading="lazy"
-          onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('is-hidden')"
-        >
-        <div class="poster-fallback is-hidden">
-          <span>✳</span>
-          <strong>${title}</strong>
-          <small>${escapeHTML(film.year)}</small>
-        </div>
-      </div>
-    `
-  }
-
   return `
     <div class="poster-frame ${className}">
-      <div class="poster-fallback">
-        <span>✳</span>
+      ${
+        poster
+          ? `
+            <img
+              src="${safeURL(poster)}"
+              alt="${title} poster"
+              loading="lazy"
+              onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('is-hidden')"
+            >
+          `
+          : ''
+      }
+
+      <div class="poster-fallback ${poster ? 'is-hidden' : ''}">
+        <span>✿</span>
         <strong>${title}</strong>
         <small>${escapeHTML(film.year)}</small>
       </div>
@@ -287,10 +315,7 @@ const setConnectionStatus = (
   element.dataset.status = success ? 'online' : 'offline'
 }
 
-const updateStat = (
-  key: string,
-  value: number | null,
-): void => {
+const updateStat = (key: string, value: number | null): void => {
   const card = document.querySelector<HTMLElement>(
     `.stat-card[data-stat="${key}"]`,
   )
@@ -304,53 +329,31 @@ const updateStat = (
 }
 
 /* =========================================================
-   FILM & READING RENDERERS
+   FILM RENDERERS
 ========================================================= */
 
-const renderTopTen = (): string =>
-  topTen.map((film, index) => {
-    const content = `
-      <span class="poster-rank">
-        #${String(index + 1).padStart(2, '0')}
-      </span>
-
+const renderTopFour = (): string =>
+  topFour.map((film) => `
+    <article class="film-card">
       ${renderPoster(film)}
 
       <div class="film-card-info">
         <h3>${escapeHTML(film.title)}</h3>
         <span>${escapeHTML(film.year)}</span>
-        <div class="film-stars">${renderStars(film.rating)}</div>
       </div>
-    `
-
-    return film.url
-      ? `
-        <a
-          class="film-card"
-          href="${safeURL(film.url)}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          ${content}
-        </a>
-      `
-      : `<article class="film-card">${content}</article>`
-  }).join('')
+    </article>
+  `).join('')
 
 const renderDiary = (entries: DiaryEntry[]): string => {
   if (!entries.length) {
     return emptyState(
-      'no diary entries returned.',
-      'The Letterboxd feed connected, but did not return any recent film diary entries.',
+      'your film diary is taking a little nap.',
+      'Your recent watches will appear here when the feed is available.',
     )
   }
 
-  return entries.map((film) => `
-    <article
-      class="diary-entry"
-      data-rating="${film.rating ?? 0}"
-      data-date="${escapeHTML(film.date)}"
-    >
+  return entries.slice(0, 15).map((film) => `
+    <article class="diary-entry">
       <time class="diary-date">
         ${escapeHTML(formatDate(film.date))}
       </time>
@@ -364,45 +367,80 @@ const renderDiary = (entries: DiaryEntry[]): string => {
           ${escapeHTML(film.year)}
         </span>
 
-        <div class="film-stars">
-          ${renderStars(film.rating)}
-        </div>
+        ${
+          film.rating !== undefined
+            ? `<div class="film-stars">${renderStars(film.rating)}</div>`
+            : ''
+        }
 
-        ${film.url ? `
-          <a
-            class="diary-open-link"
-            href="${safeURL(film.url)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            OPEN ON LETTERBOXD ↗
-          </a>
-        ` : ''}
+        ${
+          film.url
+            ? `
+              <a
+                class="diary-open-link"
+                href="${safeURL(film.url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                OPEN ON LETTERBOXD ↗
+              </a>
+            `
+            : ''
+        }
       </div>
 
-      <span class="diary-entry-mark">✳</span>
+      <span class="diary-entry-mark">✿</span>
     </article>
   `).join('')
 }
 
+const renderFavouriteReads = (): string =>
+  favouriteReads.map((read) => `
+    <a
+      class="read-card"
+      href="${safeURL(read.url)}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <div class="read-card-top">
+        <span>✿ A LITTLE FAVOURITE</span>
+        <span>↗</span>
+      </div>
+
+      <span class="read-category">
+        ${escapeHTML(read.category)}
+      </span>
+
+      <h3>${escapeHTML(read.title)}</h3>
+
+      <span class="read-author">
+        BY ${escapeHTML(read.author)}
+      </span>
+
+      <p>${escapeHTML(read.description)}</p>
+
+      <span class="read-card-bottom">
+        READ THIS ONE ↗
+      </span>
+    </a>
+  `).join('')
+
 const renderArticles = (): string => {
   if (!articles.length) {
     return emptyState(
-      'no posts returned by the feed.',
-      'The Substack feed connected, but returned no posts in this response.',
+      'nothing new on the reading desk.',
+      'New writing will find its way here when it is published.',
     )
   }
 
-  return articles.map((article, index) => `
+  return articles.map((article) => `
     <a
       class="article-row"
       href="${safeURL(article.url)}"
       target="_blank"
       rel="noopener noreferrer"
     >
-      <span class="article-number">
-        ${String(index + 1).padStart(2, '0')}
-      </span>
+      <span class="article-number">✿</span>
 
       <div class="article-copy">
         <h3>${escapeHTML(article.title)}</h3>
@@ -418,124 +456,40 @@ const renderArticles = (): string => {
   `).join('')
 }
 
-const renderFavouriteReads = (): string => {
-  if (!favouriteReads.length) {
-    return emptyState(
-      'a shelf waiting to be filled.',
-      'Add your favourite articles to the favouriteReads array in archive.ts.',
-    )
-  }
-
-  return favouriteReads.map((read, index) => `
-    <a
-      class="read-card"
-      href="${safeURL(read.url)}"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <div class="read-card-top">
-        <span>READ / ${String(index + 1).padStart(2, '0')}</span>
-        <span>↗</span>
-      </div>
-
-      <span class="read-category">
-        ${escapeHTML(read.category || 'SUBSTACK')}
-      </span>
-
-      <h3>${escapeHTML(read.title)}</h3>
-
-      <span class="read-author">
-        BY ${escapeHTML(read.author)}
-      </span>
-
-      <p>${escapeHTML(read.description)}</p>
-
-      <span class="read-card-bottom">
-        OPEN ARTICLE ↗
-      </span>
-    </a>
-  `).join('')
-}
-
 const updateDiary = (): void => {
   const list = document.getElementById('diary-list')
+  const count = document.querySelector<HTMLElement>('.diary-count')
 
-  const count = document.querySelector<HTMLElement>(
-    '.diary-count',
-  )
-
-  if (list) {
-    list.innerHTML = renderDiary(diaryEntries)
-  }
+  if (list) list.innerHTML = renderDiary(diaryEntries)
 
   if (count) {
-    count.textContent =
-      `${diaryEntries.length} RECENT FEED ENTRIES`
+    count.textContent = diaryEntries.length
+      ? `${diaryEntries.length} LITTLE RECENT WATCHES`
+      : 'WAITING FOR FILMS'
   }
-
-  applyDiaryFilter()
 }
 
 const updateArticles = (): void => {
-  const list = document.querySelector<HTMLElement>(
-    '.article-list',
-  )
+  const list = document.querySelector<HTMLElement>('.article-list')
+  const shelf = document.querySelector<HTMLElement>('.reads-shelf')
 
-  const shelf = document.querySelector<HTMLElement>(
-    '.reads-shelf',
-  )
-
-  if (list) {
-    list.innerHTML = renderArticles()
-  }
-
-  if (shelf) {
-    shelf.innerHTML = renderFavouriteReads()
-  }
+  if (list) list.innerHTML = renderArticles()
+  if (shelf) shelf.innerHTML = renderFavouriteReads()
 }
 
 /* =========================================================
-   LETTERBOXD STATISTICS
+   PROFILE STATISTICS
 ========================================================= */
 
 const updateLetterboxdStats = (): void => {
-  // Do not calculate account totals from the limited RSS feed.
-
-  profileStats.moviesAllTime =
-    letterboxdSnapshot.moviesAllTime
-
-  profileStats.moviesThisYear =
-    letterboxdSnapshot.moviesThisYear
-
-  profileStats.likedMovies =
-    letterboxdSnapshot.likedMovies
-
-  profileStats.watchlist =
-    letterboxdSnapshot.watchlist
-
-  updateStat(
-    'moviesAllTime',
-    profileStats.moviesAllTime,
-  )
-
-  updateStat(
-    'moviesThisYear',
-    profileStats.moviesThisYear,
-  )
-
-  updateStat(
-    'watchlist',
-    profileStats.watchlist,
-  )
-
-  updateStat(
-    'likedMovies',
-    profileStats.likedMovies,
-  )
+  updateStat('moviesAllTime', profileStats.moviesAllTime)
+  updateStat('moviesThisYear', profileStats.moviesThisYear)
+  updateStat('watchlist', profileStats.watchlist)
+  updateStat('likedMovies', profileStats.likedMovies)
 }
 
 /* =========================================================
-   LETTERBOXD API
+   LETTERBOXD FEED
 ========================================================= */
 
 const fetchLetterboxd = async (): Promise<void> => {
@@ -547,20 +501,15 @@ const fetchLetterboxd = async (): Promise<void> => {
       },
     })
 
-    const data =
-      await response.json() as LetterboxdResponse
+    const data = await response.json() as LetterboxdResponse
 
     if (!response.ok || data.ok === false || data.error) {
       throw new Error(
-        data.details ||
-        data.error ||
-        `Letterboxd API returned ${response.status}`,
+        data.details || data.error || `HTTP ${response.status}`,
       )
     }
 
-    const entries = Array.isArray(data.diary)
-      ? data.diary
-      : []
+    const entries = Array.isArray(data.diary) ? data.diary : []
 
     diaryEntries = entries.map((entry) => {
       const rating =
@@ -582,9 +531,15 @@ const fetchLetterboxd = async (): Promise<void> => {
         liked: entry.liked === true,
         url: entry.link || '',
       }
-    }).sort((a, b) =>
-      b.date.localeCompare(a.date),
-    )
+    })
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 15)
+
+    profileStats.watchlist =
+      typeof data.watchlist === 'number' &&
+      Number.isFinite(data.watchlist)
+        ? data.watchlist
+        : null
 
     letterboxdLoaded = true
 
@@ -593,7 +548,7 @@ const fetchLetterboxd = async (): Promise<void> => {
 
     setConnectionStatus(
       'letterboxd-status',
-      `LIVE · ${diaryEntries.length} RECENT DIARY ENTRIES`,
+      '✿ YOUR RECENT WATCHES',
       true,
     )
   } catch (error) {
@@ -601,7 +556,7 @@ const fetchLetterboxd = async (): Promise<void> => {
 
     setConnectionStatus(
       'letterboxd-status',
-      'UNAVAILABLE · TRY AGAIN LATER',
+      'A LITTLE BREAK · TRY AGAIN SOON',
       false,
     )
 
@@ -610,24 +565,16 @@ const fetchLetterboxd = async (): Promise<void> => {
 
       if (list) {
         list.innerHTML = emptyState(
-          'the diary could not load.',
-          'Please refresh the page in a little while.',
+          'the diary is taking a little nap.',
+          'Please come back in a moment.',
         )
-      }
-
-      const count = document.querySelector<HTMLElement>(
-        '.diary-count',
-      )
-
-      if (count) {
-        count.textContent = 'UNAVAILABLE'
       }
     }
   }
 }
 
 /* =========================================================
-   SUBSTACK API
+   SUBSTACK FEED
 ========================================================= */
 
 const fetchSubstack = async (): Promise<void> => {
@@ -639,48 +586,34 @@ const fetchSubstack = async (): Promise<void> => {
       },
     })
 
-    const data =
-      await response.json() as SubstackResponse
+    const data = await response.json() as SubstackResponse
 
     if (!response.ok || data.ok === false || data.error) {
       throw new Error(
-        data.details ||
-        data.error ||
-        `Substack API returned ${response.status}`,
+        data.details || data.error || `HTTP ${response.status}`,
       )
     }
 
-    const posts = Array.isArray(data.posts)
-      ? data.posts
-      : []
+    const posts = Array.isArray(data.posts) ? data.posts : []
 
     articles = posts.map((post) => ({
       title: post.title || 'Untitled post',
-      description: stripHTML(
-        post.description || '',
-      ).slice(0, 220),
+      description: stripHTML(post.description || '').slice(0, 220),
       date: formatDate(post.date || ''),
       url: post.link || substackURL,
-      image: post.image || '',
     }))
 
     substackLoaded = true
-
-    // This is the number returned by RSS, not a lifetime total.
     profileStats.substackReads = articles.length
 
     updateArticles()
-
-    updateStat(
-      'substackReads',
-      profileStats.substackReads,
-    )
+    updateStat('substackReads', profileStats.substackReads)
 
     setConnectionStatus(
       'substack-status',
       articles.length
-        ? `LIVE · ${articles.length} POSTS IN RSS RESPONSE`
-        : 'CONNECTED · NO POSTS RETURNED BY RSS',
+        ? '✿ FRESH WORDS FROM MY SUBSTACK'
+        : 'THE READING DESK IS QUIET',
       true,
     )
   } catch (error) {
@@ -688,19 +621,17 @@ const fetchSubstack = async (): Promise<void> => {
 
     setConnectionStatus(
       'substack-status',
-      'UNAVAILABLE · TRY AGAIN LATER',
+      'THE READING DESK IS RESTING',
       false,
     )
 
     if (!substackLoaded) {
-      const list = document.querySelector<HTMLElement>(
-        '.article-list',
-      )
+      const list = document.querySelector<HTMLElement>('.article-list')
 
       if (list) {
         list.innerHTML = emptyState(
-          'the Substack feed could not load.',
-          'Please try again later.',
+          'the reading desk is resting.',
+          'New posts will appear here when the feed is available.',
         )
       }
     }
@@ -726,14 +657,10 @@ app.innerHTML = `
         >
           <span class="logo-mark">a.</span>
           <span>the archive</span>
+          <span class="logo-sparkle">✿</span>
         </a>
 
-        <nav
-          class="main-nav"
-          id="main-nav"
-          aria-label="Main navigation"
-        >
-          <a href="/">aria.exe <span>(home)</span></a>
+        <nav class="main-nav" id="main-nav" aria-label="Main navigation">
           <a href="#reads">Reads</a>
           <a href="#films">Films</a>
           <a href="#rants">Rants</a>
@@ -759,41 +686,31 @@ app.innerHTML = `
 
         <div class="profile-banner">
           <div class="banner-pattern"></div>
-          <span class="banner-label">
-            A PERSONAL COLLECTION OF THINGS
-          </span>
-          <span class="banner-title">
-            a little universe.
-          </span>
-          <span class="banner-coordinate">
-            USER: aria / ARCHIVE_001
-          </span>
+          <span class="banner-doodle doodle-one">✿</span>
+          <span class="banner-doodle doodle-two">♡</span>
+          <span class="banner-doodle doodle-three">✧</span>
+
+          <span class="banner-label">A LITTLE COLLECTION OF EVERYTHING</span>
+          <span class="banner-title">little things, lovely stories.</span>
+          <span class="banner-coordinate">a tiny corner of the internet ♡</span>
         </div>
 
         <div class="profile-heading">
 
           <div class="profile-avatar">
-            a<span>.</span>
+            <img
+              src="${MAIN_PROFILE_IMAGE}"
+              alt="aria's profile"
+              onerror="this.style.display='none'; this.parentElement.classList.add('avatar-placeholder')"
+            >
+            <span class="avatar-fallback">a.</span>
           </div>
 
           <div class="profile-title">
-            <span class="eyebrow">
-              THE HUMAN BEHIND THE ARCHIVE
-            </span>
+            <span class="eyebrow">A PERSON WITH TOO MANY FAVOURITES ✿</span>
             <h1>aria</h1>
-            <p>
-              collecting stories, films and little pieces of life.
-            </p>
+            <p>collecting stories, films and little pieces of life.</p>
           </div>
-
-          <a
-            class="profile-link"
-            href="${safeURL(letterboxdURL)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            LETTERBOXD ↗
-          </a>
 
         </div>
 
@@ -805,79 +722,43 @@ app.innerHTML = `
 
         <div class="stats-grid" aria-label="Profile statistics">
 
-          <button
-            class="stat-card"
-            type="button"
-            data-stat="moviesAllTime"
-          >
+          <div class="stat-card" data-stat="moviesAllTime">
             <strong data-count="861">861</strong>
             <span>FILMS WATCHED</span>
-            <small>LAST VERIFIED ↗</small>
-          </button>
+            <small>♡ ALL-TIME</small>
+          </div>
 
-          <button
-            class="stat-card"
-            type="button"
-            data-stat="moviesThisYear"
-          >
+          <div class="stat-card" data-stat="moviesThisYear">
             <strong data-count="91">91</strong>
             <span>WATCHED IN 2026</span>
-            <small>DISTINCT FILMS ↗</small>
-          </button>
+            <small>♡ DISTINCT FILMS</small>
+          </div>
 
-          <button
-            class="stat-card"
-            type="button"
-            data-stat="watchlist"
-          >
+          <div class="stat-card" data-stat="watchlist">
             <strong data-count="—">—</strong>
             <span>WATCHLIST</span>
-            <small>NOT VERIFIED</small>
-          </button>
+            <small>♡ MY NEXT ADVENTURES</small>
+          </div>
 
-          <button
-            class="stat-card"
-            type="button"
-            data-stat="likedMovies"
-          >
+          <div class="stat-card" data-stat="likedMovies">
             <strong data-count="27">27</strong>
             <span>LIKED FILMS</span>
-            <small>LAST VERIFIED ↗</small>
-          </button>
+            <small>♡ ALL-TIME</small>
+          </div>
 
-          <button
-            class="stat-card"
-            type="button"
-            data-stat="substackReads"
-          >
+          <div class="stat-card" data-stat="substackReads">
             <strong data-count="—">—</strong>
-            <span>SUBSTACK POSTS</span>
-            <small>LIVE RSS FEED ↗</small>
-          </button>
+            <span>RECENT POSTS</span>
+            <small>♡ SUBSTACK</small>
+          </div>
 
         </div>
-
-        <div
-          class="stat-message"
-          id="stat-message"
-          hidden
-          aria-live="polite"
-        ></div>
-
-        <p class="stats-note">
-          Letterboxd totals are a last-verified snapshot from
-          ${letterboxdSnapshot.verifiedAt}.
-          Public RSS refreshes your recent diary, not complete
-          account statistics.
-        </p>
 
       </section>
 
       <div class="page-note">
-        <span>
-          <i></i> A LITTLE CORNER OF THE INTERNET
-        </span>
-        <span>SCROLL TO EXPLORE ↓</span>
+        <span><i></i> MADE OF WORDS, FILMS & FEELINGS</span>
+        <span>SCROLL A LITTLE ↓</span>
       </div>
 
       <!-- READING ROOM -->
@@ -886,9 +767,7 @@ app.innerHTML = `
 
         <div class="section-heading">
           <div>
-            <span class="section-index">
-              01 / THE READING ROOM
-            </span>
+            <span class="section-index">01 / THE READING ROOM ✿</span>
             <h2>words & <em>thoughts.</em></h2>
           </div>
 
@@ -904,36 +783,38 @@ app.innerHTML = `
 
         <div class="substack-card">
 
-          <div class="substack-symbol">a.</div>
+          <div class="substack-symbol">
+            <img
+              src="${SUBSTACK_PROFILE_IMAGE}"
+              alt="aria's Substack profile"
+              onerror="this.style.display='none'; this.parentElement.classList.add('symbol-placeholder')"
+            >
+            <span>a.</span>
+          </div>
 
           <div class="substack-copy">
-            <span class="eyebrow">
-              MY WRITING CORNER
-            </span>
-
+            <span class="eyebrow">MY LITTLE WRITING CORNER</span>
             <h3>little pieces of my mind.</h3>
-
             <p>
               Personal essays, random thoughts, little stories
               and words that needed somewhere to live.
             </p>
-
             <a
               href="${safeURL(substackURL)}"
               target="_blank"
               rel="noopener noreferrer"
             >
-              VISIT MY SUBSTACK ↗
+              COME READ WITH ME ↗
             </a>
           </div>
 
-          <span class="substack-decoration">✳</span>
+          <span class="substack-decoration">✿</span>
 
         </div>
 
         <div class="subsection-heading">
-          <h3>recently published</h3>
-          <span id="substack-status">CONNECTING...</span>
+          <h3>freshly written</h3>
+          <span id="substack-status">A MOMENT PLEASE...</span>
         </div>
 
         <div class="article-list">
@@ -942,10 +823,9 @@ app.innerHTML = `
 
         <div class="subsection-heading shelf-heading">
           <div>
-            <span class="eyebrow">THE LITTLE BOOKSHELF</span>
+            <span class="eyebrow">A FEW THINGS I LOVE</span>
             <h3>favourite reads.</h3>
           </div>
-
           <span>SCROLL SIDEWAYS →</span>
         </div>
 
@@ -961,20 +841,9 @@ app.innerHTML = `
 
         <div class="section-heading">
           <div>
-            <span class="section-index">
-              02 / THE FILM CABINET
-            </span>
+            <span class="section-index">02 / THE FILM CABINET ✿</span>
             <h2>life in <em>frames.</em></h2>
           </div>
-
-          <a
-            class="section-external"
-            href="${safeURL(letterboxdURL)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            MY LETTERBOXD ↗
-          </a>
         </div>
 
         <div class="letterboxd-card">
@@ -982,26 +851,12 @@ app.innerHTML = `
           <div class="letterboxd-icon">L</div>
 
           <div>
-            <span class="eyebrow">
-              LETTERBOXD FILM DIARY
-            </span>
-
-            <h3>
-              films, feelings & everything in between.
-            </h3>
-
+            <span class="eyebrow">MY LETTERBOXD DIARY</span>
+            <h3>films, feelings & everything in between.</h3>
             <p>
               A collection of stories I've watched, loved,
               rated and probably overthought.
             </p>
-
-            <a
-              href="${safeURL(letterboxdURL)}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              VIEW MY LETTERBOXD ↗
-            </a>
           </div>
 
           <span class="lb-decoration">★★★★★</span>
@@ -1010,18 +865,14 @@ app.innerHTML = `
 
         <div class="subsection-heading top-ten-heading">
           <div>
-            <span class="eyebrow">THE ALL-TIME LIST</span>
+            <span class="eyebrow">THE FOREVER FAVOURITES</span>
             <h3>my top four.</h3>
           </div>
-
-          <span>01 — 04 / PERSONAL RANKING</span>
+          <span>THESE HAVE MY HEART ♡</span>
         </div>
 
-        <div
-          class="horizontal-shelf film-shelf"
-          id="top-ten-shelf"
-        >
-          ${renderTopTen()}
+        <div class="horizontal-shelf film-shelf" id="top-ten-shelf">
+          ${renderTopFour()}
         </div>
 
         <div class="subsection-heading diary-heading">
@@ -1029,55 +880,17 @@ app.innerHTML = `
             <span class="eyebrow">THE WATCHED LOG</span>
             <h3>recently watched.</h3>
           </div>
-
-          <span id="letterboxd-status">CONNECTING...</span>
+          <span id="letterboxd-status">A MOMENT PLEASE...</span>
         </div>
 
         <div class="diary-toolbar">
-
-          <div
-            class="diary-filters"
-            role="group"
-            aria-label="Filter diary"
-          >
-            <button
-              class="filter-button active"
-              type="button"
-              data-filter="all"
-            >
-              ALL
-            </button>
-
-            <button
-              class="filter-button"
-              type="button"
-              data-filter="five"
-            >
-              FIVE STARS
-            </button>
-
-            <button
-              class="filter-button"
-              type="button"
-              data-filter="recent"
-            >
-              RECENT
-            </button>
-          </div>
-
-          <span class="diary-count">
-            LOADING...
-          </span>
-
+          <span class="diary-count">LOADING MY FILM DIARY...</span>
         </div>
 
-        <div
-          class="diary-list"
-          id="diary-list"
-        >
+        <div class="diary-list" id="diary-list">
           ${emptyState(
-            'loading your diary.',
-            'Fetching your latest Letterboxd entries...',
+            'fetching your films.',
+            'A little moment while the diary loads...',
           )}
         </div>
 
@@ -1117,94 +930,99 @@ app.innerHTML = `
 
         <div class="section-heading">
           <div>
-            <span class="section-index">
-              03 / THE UNFILTERED CORNER
-            </span>
+            <span class="section-index">03 / THE UNFILTERED CORNER ✿</span>
             <h2>the rant <em>room.</em></h2>
           </div>
-
-          <span class="section-external">
-            NO REVIEWS. JUST THOUGHTS.
-          </span>
+          <span class="section-external">MY LITTLE BLOG</span>
         </div>
 
         <div class="rant-intro">
-
-          <span class="rant-stamp">
-            NO<br>FILTER
-          </span>
-
+          <span class="rant-stamp">DEAR<br>DIARY</span>
           <div>
-            <h3>
-              some thoughts don't need a rating.
-            </h3>
-
+            <h3>some thoughts deserve their own little home.</h3>
             <p>
-              Dramatic observations, midnight thoughts,
-              tiny frustrations and everything in between.
-              Leave a little piece of your mind.
+              Personal notes, midnight thoughts, tiny observations,
+              dramatic paragraphs and everything in between.
+              A little collection of things on my mind.
             </p>
           </div>
-
         </div>
 
         <div class="rant-editor">
 
           <div class="editor-heading">
-            <span>NEW THOUGHT.TXT</span>
+            <span>A LITTLE NOTE TO THE UNIVERSE ✿</span>
             <span id="rant-today"></span>
           </div>
 
-          <label for="rant-name">
-            YOUR NAME / ALIAS
-          </label>
+          <div class="owner-login" id="owner-login">
+            <p>the writing desk is reserved for aria ♡</p>
 
-          <input
-            id="rant-name"
-            type="text"
-            maxlength="32"
-            placeholder="anonymous, if you wish..."
-          >
+            <label for="rant-admin-token">OWNER ACCESS KEY</label>
 
-          <label for="rant-message">
-            WHAT'S ON YOUR MIND?
-          </label>
+            <input
+              id="rant-admin-token"
+              type="password"
+              autocomplete="current-password"
+              placeholder="your private admin key"
+            >
 
-          <textarea
-            id="rant-message"
-            maxlength="1000"
-            placeholder="dear diary, i have something to say..."
-          ></textarea>
-
-          <div class="editor-bottom">
-            <span id="rant-character-count">
-              0 / 1000
-            </span>
-
-            <button id="submit-rant" type="button">
-              POST THOUGHT ↗
+            <button id="rant-admin-unlock" type="button">
+              UNLOCK MY WRITING DESK ↗
             </button>
+
+            <span id="rant-admin-status" aria-live="polite"></span>
           </div>
 
-          <p
-            class="rant-feedback"
-            id="rant-feedback"
-            aria-live="polite"
-          ></p>
+          <div class="owner-composer" id="owner-composer" hidden>
 
-          <small class="storage-note">
-            POSTS ARE STORED IN THIS BROWSER ONLY.
-            SHARED VISITOR POSTS REQUIRE A BACKEND.
-          </small>
+            <div class="owner-composer-heading">
+              <span>WELCOME BACK, ARIA ♡</span>
+              <button id="rant-admin-lock" type="button">LOCK DESK</button>
+            </div>
+
+            <label for="rant-title">POST TITLE</label>
+            <input
+              id="rant-title"
+              type="text"
+              maxlength="100"
+              placeholder="give this little thought a title..."
+            >
+
+            <label for="rant-message">YOUR THOUGHTS</label>
+            <textarea
+              id="rant-message"
+              maxlength="5000"
+              placeholder="dear diary, i have something to say..."
+            ></textarea>
+
+            <div class="editor-bottom">
+              <span id="rant-character-count">0 / 5000</span>
+              <button id="submit-rant" type="button">
+                PUBLISH MY THOUGHT ↗
+              </button>
+            </div>
+
+            <p class="rant-feedback" id="rant-feedback" aria-live="polite"></p>
+
+          </div>
 
         </div>
 
         <div class="subsection-heading rant-log-heading">
-          <h3>the thought log.</h3>
-          <span>WORDS LEFT HERE</span>
+          <div>
+            <span class="eyebrow">LITTLE PIECES OF MY MIND</span>
+            <h3>the thought log.</h3>
+          </div>
+          <span>FROM MY DESK ♡</span>
         </div>
 
-        <div class="rant-list" id="rant-list"></div>
+        <div class="rant-list" id="rant-list">
+          ${emptyState(
+            'the room is quiet.',
+            'My little thoughts will find their way here.',
+          )}
+        </div>
 
       </section>
 
@@ -1220,15 +1038,10 @@ app.innerHTML = `
             that's a wrap.<br>
             <em>thanks for stopping by.</em>
           </p>
-
-          <span>
-            A PERSONAL COLLECTION OF WORDS & FRAMES.
-          </span>
+          <span>A LITTLE COLLECTION OF WORDS & FRAMES.</span>
         </div>
 
-        <a class="back-to-top" href="#archive-top">
-          BACK TO TOP ↑
-        </a>
+        <a class="back-to-top" href="#archive-top">BACK TO TOP ↑</a>
       </div>
 
       <div class="footer-links">
@@ -1247,12 +1060,20 @@ app.innerHTML = `
         >
           SUBSTACK ↗
         </a>
+
+        <a
+          href="${safeURL(spotifyURL)}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          SPOTIFY ↗
+        </a>
       </div>
 
       <div class="footer-bottom">
         <span>© ${currentYear} aria</span>
-        <span>MADE WITH FEELING.</span>
-        <a href="/">← aria.exe (home)</a>
+        <span>MADE WITH FEELING ♡</span>
+        <a href="/">← aria.exe</a>
       </div>
 
     </footer>
@@ -1261,340 +1082,426 @@ app.innerHTML = `
 `
 
 /* =========================================================
-   STAT DETAILS
+   INITIAL STATISTICS
 ========================================================= */
 
-const statCards =
-  document.querySelectorAll<HTMLButtonElement>('.stat-card')
-
-const statMessage =
-  document.getElementById('stat-message')
-
-const statDescriptions: Record<string, string> = {
-  moviesAllTime:
-    `861 films watched, last verified ${letterboxdSnapshot.verifiedAt}. The public Letterboxd RSS feed cannot provide your complete lifetime total.`,
-
-  moviesThisYear:
-    `91 distinct films watched in 2026, last verified ${letterboxdSnapshot.verifiedAt}. Rewatches are not counted as additional distinct films.`,
-
-  watchlist:
-    'Your current watchlist count is not available from the public diary RSS feed, so it is shown as unavailable instead of guessed.',
-
-  likedMovies:
-    `27 liked films, last verified ${letterboxdSnapshot.verifiedAt}. The public RSS feed does not provide a live liked-film total.`,
-
-  substackReads:
-    'This is the number of posts returned by the current Substack RSS response, not guaranteed to be the publication’s lifetime post count.',
-}
-
-statCards.forEach((card) => {
-  card.addEventListener('click', () => {
-    const key = card.dataset.stat || ''
-    const description = statDescriptions[key]
-
-    if (!statMessage || !description) return
-
-    const wasActive = card.classList.contains('selected')
-
-    statCards.forEach((item) =>
-      item.classList.remove('selected'),
-    )
-
-    if (wasActive) {
-      statMessage.hidden = true
-      statMessage.textContent = ''
-      return
-    }
-
-    card.classList.add('selected')
-    statMessage.textContent = description
-    statMessage.hidden = false
-  })
-})
+updateLetterboxdStats()
 
 /* =========================================================
-   DIARY FILTERS
+   RANT ROOM — OWNER-ONLY PUBLISHING
 ========================================================= */
-
-const applyDiaryFilter = (): void => {
-  const list = document.getElementById('diary-list')
-
-  if (!list) return
-
-  const entries = Array.from(
-    list.querySelectorAll<HTMLElement>('.diary-entry'),
-  )
-
-  entries.forEach((entry) => {
-    const rating = Number(entry.dataset.rating || 0)
-    const date = entry.dataset.date || ''
-
-    if (currentDiaryFilter === 'five') {
-      entry.hidden = rating !== 5
-    } else if (currentDiaryFilter === 'recent') {
-      entry.hidden = !date
-    } else {
-      entry.hidden = false
-    }
-  })
-
-  if (currentDiaryFilter === 'recent') {
-    entries
-      .sort((a, b) =>
-        (b.dataset.date || '').localeCompare(
-          a.dataset.date || '',
-        ),
-      )
-      .forEach((entry) => list.appendChild(entry))
-  }
-}
-
-const filterButtons =
-  document.querySelectorAll<HTMLButtonElement>('.filter-button')
-
-filterButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    filterButtons.forEach((item) =>
-      item.classList.remove('active'),
-    )
-
-    button.classList.add('active')
-
-    currentDiaryFilter =
-      (button.dataset.filter as 'all' | 'five' | 'recent') || 'all'
-
-    applyDiaryFilter()
-  })
-})
-
-/* =========================================================
-   RANT ROOM — LOCAL STORAGE
-========================================================= */
-
-const RANT_STORAGE_KEY = 'aria-archive-rants-v1'
-
-const rantName =
-  document.getElementById('rant-name') as HTMLInputElement | null
 
 const rantMessage =
   document.getElementById('rant-message') as HTMLTextAreaElement | null
 
-const rantCount =
-  document.getElementById('rant-character-count')
+const rantTitle =
+  document.getElementById('rant-title') as HTMLInputElement | null
 
-const rantFeedback =
-  document.getElementById('rant-feedback')
+const rantCount = document.getElementById('rant-character-count')
+const rantFeedback = document.getElementById('rant-feedback')
+const rantList = document.getElementById('rant-list')
+const submitRant = document.getElementById('submit-rant')
+const rantToday = document.getElementById('rant-today')
 
-const rantList =
-  document.getElementById('rant-list')
+const adminTokenInput =
+  document.getElementById('rant-admin-token') as HTMLInputElement | null
 
-const submitRant =
-  document.getElementById('submit-rant')
+const adminUnlock = document.getElementById('rant-admin-unlock')
+const adminLock = document.getElementById('rant-admin-lock')
+const adminStatus = document.getElementById('rant-admin-status')
 
-const rantToday =
-  document.getElementById('rant-today')
+const ownerLogin = document.getElementById('owner-login')
+const ownerComposer = document.getElementById('owner-composer')
 
-if (rantToday) {
-  rantToday.textContent = new Date().toLocaleDateString(
-    'en-IN',
-    {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    },
-  ).toUpperCase()
-}
+/* =========================================================
+   ADMIN SESSION
+========================================================= */
 
-const getRants = (): Rant[] => {
+const getAdminToken = (): string => {
   try {
-    const parsed: unknown = JSON.parse(
-      localStorage.getItem(RANT_STORAGE_KEY) || '[]',
-    )
-
-    if (!Array.isArray(parsed)) return []
-
-    return parsed.filter(
-      (item): item is Rant =>
-        typeof item === 'object' &&
-        item !== null &&
-        typeof item.id === 'number' &&
-        typeof item.name === 'string' &&
-        typeof item.message === 'string' &&
-        typeof item.date === 'string',
-    )
+    return sessionStorage.getItem(RANT_ADMIN_SESSION) || ''
   } catch {
-    return []
+    return ''
   }
 }
+
+const setAdminToken = (token: string): void => {
+  try {
+    sessionStorage.setItem(RANT_ADMIN_SESSION, token)
+  } catch {
+    setAdminStatus('Your browser could not save the session.')
+  }
+}
+
+const clearAdminToken = (): void => {
+  try {
+    sessionStorage.removeItem(RANT_ADMIN_SESSION)
+  } catch {
+    // Session storage is unavailable.
+  }
+}
+
+const isAdminUnlocked = (): boolean => Boolean(getAdminToken())
+
+const setRantFeedback = (message: string): void => {
+  if (rantFeedback) rantFeedback.textContent = message
+}
+
+const setAdminStatus = (message: string): void => {
+  if (adminStatus) adminStatus.textContent = message
+}
+
+const updateOwnerView = (): void => {
+  const unlocked = isAdminUnlocked()
+
+  if (ownerLogin) ownerLogin.hidden = unlocked
+  if (ownerComposer) ownerComposer.hidden = !unlocked
+}
+
+/* =========================================================
+   RANT DATE
+========================================================= */
+
+if (rantToday) {
+  rantToday.textContent = new Date().toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).toUpperCase()
+}
+
+/* =========================================================
+   RANT RENDERING
+========================================================= */
 
 const renderRants = (): void => {
   if (!rantList) return
 
-  const rants = getRants()
-
   if (!rants.length) {
     rantList.innerHTML = emptyState(
       'the room is quiet.',
-      'Leave the first thought.',
+      'My little thoughts will find their way here.',
     )
-
     return
   }
 
-  rantList.innerHTML = rants.map((rant) => `
-    <article class="rant-entry">
+  rantList.innerHTML = rants.map((rant) => {
+    const title = rant.title?.trim() || ''
 
-      <div class="rant-entry-header">
-        <strong>
-          ${escapeHTML(rant.name || 'ANONYMOUS')}
-        </strong>
+    return `
+      <article class="rant-entry">
 
-        <time>
-          ${escapeHTML(rant.date)}
-        </time>
-      </div>
+        <div class="rant-entry-header">
+          <strong>${escapeHTML(rant.name || 'aria')}</strong>
+          <time>${escapeHTML(formatDate(rant.date))}</time>
+        </div>
 
-      <p>
-        ${escapeHTML(rant.message).replace(/\n/g, '<br>')}
-      </p>
+        ${
+          title
+            ? `<h3>${escapeHTML(title)}</h3>`
+            : ''
+        }
 
-      <button
-        type="button"
-        class="delete-rant"
-        data-delete-rant="${rant.id}"
-      >
-        DELETE ENTRY ×
-      </button>
+        <p>${escapeHTML(rant.message).replace(/\n/g, '<br>')}</p>
 
-    </article>
-  `).join('')
+        ${
+          isAdminUnlocked()
+            ? `
+              <button
+                type="button"
+                class="delete-rant"
+                data-delete-rant="${escapeHTML(rant.id)}"
+              >
+                DELETE ENTRY ×
+              </button>
+            `
+            : ''
+        }
+
+      </article>
+    `
+  }).join('')
 }
+
+/* =========================================================
+   LOAD PUBLIC RANTS
+========================================================= */
+
+const loadRants = async (): Promise<void> => {
+  try {
+    const response = await fetch(RANTS_API, {
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+
+    const data = await response.json() as RantsResponse
+
+    if (!response.ok || data.ok === false) {
+      throw new Error(
+        data.details || data.error || 'Unable to load thoughts',
+      )
+    }
+
+    rants = Array.isArray(data.rants) ? data.rants : []
+
+    renderRants()
+  } catch (error) {
+    console.error('Rant loading failed:', error)
+
+    if (rantList) {
+      rantList.innerHTML = emptyState(
+        'the thought room is resting.',
+        'Please try again in a little while.',
+      )
+    }
+  }
+}
+
+/* =========================================================
+   CHARACTER COUNTER
+========================================================= */
 
 rantMessage?.addEventListener('input', () => {
   if (rantCount && rantMessage) {
-    rantCount.textContent =
-      `${rantMessage.value.length} / 1000`
+    rantCount.textContent = `${rantMessage.value.length} / 5000`
   }
 })
 
-submitRant?.addEventListener('click', () => {
-  const message = rantMessage?.value.trim() || ''
+/* =========================================================
+   ADMIN UNLOCK
+========================================================= */
 
-  if (!message) {
-    if (rantFeedback) {
-      rantFeedback.textContent = 'Write something first :)'
-    }
+adminUnlock?.addEventListener('click', async () => {
+  const token = adminTokenInput?.value.trim() || ''
 
+  if (!token) {
+    setAdminStatus('Enter your owner key first.')
     return
   }
 
-  const newRant: Rant = {
-    id: Date.now(),
-    name: rantName?.value.trim() || 'anonymous',
-    message,
-    date: new Date().toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
+  if (adminUnlock instanceof HTMLButtonElement) {
+    adminUnlock.disabled = true
+    adminUnlock.textContent = 'CHECKING...'
   }
 
   try {
-    const rants = getRants()
+    const response = await fetch(RANTS_API, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    })
 
-    rants.unshift(newRant)
+    const data = await response.json() as RantsResponse
 
-    localStorage.setItem(
-      RANT_STORAGE_KEY,
-      JSON.stringify(rants),
-    )
-
-    if (rantMessage) rantMessage.value = ''
-    if (rantName) rantName.value = ''
-
-    if (rantCount) {
-      rantCount.textContent = '0 / 1000'
+    if (!response.ok || data.ok === false) {
+      throw new Error(
+        data.details || data.error || 'Invalid owner key',
+      )
     }
 
-    if (rantFeedback) {
-      rantFeedback.textContent =
-        'Thought saved on this device. Thank you ✳'
+    setAdminToken(token)
+
+    rants = Array.isArray(data.rants) ? data.rants : rants
+
+    if (adminTokenInput) {
+      adminTokenInput.value = ''
     }
 
+    updateOwnerView()
     renderRants()
+
+    setAdminStatus('Your writing desk is ready ♡')
   } catch {
-    if (rantFeedback) {
-      rantFeedback.textContent =
-        'Could not save. Browser storage may be unavailable.'
+    clearAdminToken()
+    updateOwnerView()
+
+    setAdminStatus('That key did not work. Try again.')
+  } finally {
+    if (adminUnlock instanceof HTMLButtonElement) {
+      adminUnlock.disabled = false
+      adminUnlock.textContent = 'UNLOCK MY WRITING DESK ↗'
     }
   }
 })
 
-rantList?.addEventListener('click', (event) => {
+/* =========================================================
+   ADMIN LOCK
+========================================================= */
+
+adminLock?.addEventListener('click', () => {
+  clearAdminToken()
+  updateOwnerView()
+  renderRants()
+
+  setAdminStatus('Your writing desk is locked.')
+})
+
+/* =========================================================
+   PUBLISH RANT
+========================================================= */
+
+submitRant?.addEventListener('click', async () => {
+  if (rantRequestInProgress) return
+
+  if (!isAdminUnlocked()) {
+    setRantFeedback('Unlock your writing desk first ♡')
+    return
+  }
+
+  const title = rantTitle?.value.trim() || ''
+  const message = rantMessage?.value.trim() || ''
+
+  if (!title) {
+    setRantFeedback('Give your little thought a title first ♡')
+    return
+  }
+
+  if (!message) {
+    setRantFeedback('A little thought needs some words first ♡')
+    return
+  }
+
+  if (title.length > 100 || message.length > 5000) {
+    setRantFeedback('That post is a little too long.')
+    return
+  }
+
+  rantRequestInProgress = true
+
+  if (submitRant instanceof HTMLButtonElement) {
+    submitRant.disabled = true
+    submitRant.textContent = 'PUBLISHING...'
+  }
+
+  try {
+    const response = await fetch(RANTS_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getAdminToken()}`,
+      },
+      body: JSON.stringify({
+        name: 'aria',
+        title,
+        message,
+      }),
+    })
+
+    const data = await response.json() as RantsResponse
+
+    if (!response.ok || data.ok === false) {
+      throw new Error(
+        data.details || data.error || 'Could not publish this thought',
+      )
+    }
+
+    if (rantTitle) rantTitle.value = ''
+    if (rantMessage) rantMessage.value = ''
+
+    if (rantCount) {
+      rantCount.textContent = '0 / 5000'
+    }
+
+    setRantFeedback('Your little thought has found its place ♡')
+
+    await loadRants()
+  } catch (error) {
+    setRantFeedback(
+      error instanceof Error
+        ? error.message
+        : 'Could not publish this thought. Please try again.',
+    )
+  } finally {
+    rantRequestInProgress = false
+
+    if (submitRant instanceof HTMLButtonElement) {
+      submitRant.disabled = false
+      submitRant.textContent = 'PUBLISH MY THOUGHT ↗'
+    }
+  }
+})
+
+/* =========================================================
+   DELETE RANT
+========================================================= */
+
+rantList?.addEventListener('click', async (event) => {
   const target = event.target
 
   if (!(target instanceof HTMLElement)) return
+  if (!isAdminUnlocked()) return
 
-  const button =
-    target.closest<HTMLButtonElement>('[data-delete-rant]')
+  const button = target.closest<HTMLButtonElement>(
+    '[data-delete-rant]',
+  )
 
   if (!button) return
 
-  const id = Number(button.dataset.deleteRant)
+  const id = button.dataset.deleteRant
+
+  if (!id) return
+
+  if (!window.confirm('Delete this thought permanently?')) {
+    return
+  }
 
   try {
-    localStorage.setItem(
-      RANT_STORAGE_KEY,
-      JSON.stringify(
-        getRants().filter((rant) => rant.id !== id),
-      ),
-    )
+    const response = await fetch(RANTS_API, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getAdminToken()}`,
+      },
+      body: JSON.stringify({ id }),
+    })
 
-    renderRants()
-  } catch {
-    if (rantFeedback) {
-      rantFeedback.textContent =
-        'Could not delete this entry.'
+    const data = await response.json() as RantsResponse
+
+    if (!response.ok || data.ok === false) {
+      throw new Error(
+        data.details || data.error || 'Unable to delete this thought',
+      )
     }
+
+    setRantFeedback('Thought removed ♡')
+
+    await loadRants()
+  } catch (error) {
+    setRantFeedback(
+      error instanceof Error
+        ? error.message
+        : 'Could not delete this thought.',
+    )
   }
 })
 
-renderRants()
+updateOwnerView()
+void loadRants()
 
 /* =========================================================
    MOBILE NAVIGATION
 ========================================================= */
 
-const mobileMenu =
-  document.getElementById('mobile-menu')
-
-const mainNav =
-  document.getElementById('main-nav')
+const mobileMenu = document.getElementById('mobile-menu')
+const mainNav = document.getElementById('main-nav')
 
 mobileMenu?.addEventListener('click', () => {
-  const isOpen =
-    mainNav?.classList.toggle('nav-open') ?? false
+  const isOpen = mainNav?.classList.toggle('nav-open') ?? false
 
   mobileMenu.classList.toggle('menu-open', isOpen)
-
-  mobileMenu.setAttribute(
-    'aria-expanded',
-    String(isOpen),
-  )
+  mobileMenu.setAttribute('aria-expanded', String(isOpen))
 })
 
 mainNav?.querySelectorAll('a').forEach((link) => {
   link.addEventListener('click', () => {
     mainNav.classList.remove('nav-open')
-
     mobileMenu?.classList.remove('menu-open')
-
-    mobileMenu?.setAttribute(
-      'aria-expanded',
-      'false',
-    )
+    mobileMenu?.setAttribute('aria-expanded', 'false')
   })
 })
 
@@ -1602,13 +1509,13 @@ mainNav?.querySelectorAll('a').forEach((link) => {
    SCROLL EFFECTS
 ========================================================= */
 
-const navLinks =
-  document.querySelectorAll<HTMLAnchorElement>('.main-nav a')
+const navLinks = document.querySelectorAll<HTMLAnchorElement>(
+  '.main-nav a',
+)
 
-const pageSections =
-  document.querySelectorAll<HTMLElement>(
-    '#reads, #films, #rants',
-  )
+const pageSections = document.querySelectorAll<HTMLElement>(
+  '#reads, #films, #rants',
+)
 
 if ('IntersectionObserver' in window) {
   const sectionObserver = new IntersectionObserver(
@@ -1619,8 +1526,7 @@ if ('IntersectionObserver' in window) {
         navLinks.forEach((link) => {
           link.classList.toggle(
             'active',
-            link.getAttribute('href') ===
-              `#${entry.target.id}`,
+            link.getAttribute('href') === `#${entry.target.id}`,
           )
         })
       })
@@ -1630,9 +1536,9 @@ if ('IntersectionObserver' in window) {
     },
   )
 
-  pageSections.forEach((section) =>
-    sectionObserver.observe(section),
-  )
+  pageSections.forEach((section) => {
+    sectionObserver.observe(section)
+  })
 
   const revealObserver = new IntersectionObserver(
     (entries, observer) => {
@@ -1652,17 +1558,17 @@ if ('IntersectionObserver' in window) {
     .querySelectorAll(
       '.content-section, .profile-section, .page-note',
     )
-    .forEach((element) =>
-      revealObserver.observe(element),
-    )
+    .forEach((element) => {
+      revealObserver.observe(element)
+    })
 } else {
   document
     .querySelectorAll(
       '.content-section, .profile-section, .page-note',
     )
-    .forEach((element) =>
-      element.classList.add('is-visible'),
-    )
+    .forEach((element) => {
+      element.classList.add('is-visible')
+    })
 }
 
 /* =========================================================
@@ -1731,29 +1637,26 @@ const refreshLiveData = async (): Promise<void> => {
   }
 }
 
-// Render the verified Letterboxd snapshot immediately.
-updateLetterboxdStats()
-
-// Fetch the two live feeds.
 void refreshLiveData()
 
-// Refresh every five minutes.
 window.setInterval(() => {
   if (!document.hidden) {
     void refreshLiveData()
   }
 }, REFRESH_INTERVAL)
 
-// Refresh when the visitor returns to the tab.
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     void refreshLiveData()
   }
 })
 
-// Refresh when the visitor focuses the window.
 window.addEventListener('focus', () => {
   void refreshLiveData()
 })
+
+/* =========================================================
+   READY
+========================================================= */
 
 document.documentElement.classList.add('archive-ready')
