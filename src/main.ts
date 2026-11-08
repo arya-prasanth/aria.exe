@@ -115,8 +115,8 @@ app.innerHTML = `
 
   <nav class="main-nav" aria-label="Main navigation">
     <a href="#home" class="active">home</a>
-    <a href="resume.html">resume</a>
     <a href="archive.html">archive</a>
+    <a href="resume.html">resume</a>
     <a href="gallery.html">gallery</a>
   </nav>
 
